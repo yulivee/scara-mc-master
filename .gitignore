@@ -1,0 +1,10 @@
+.orig
+.pioenvs
+.clang_complete
+.gcc-flags.json
+.piolibdeps
+*.swp
+.swo
+.bak
+.orig
+lib/ros_lib
