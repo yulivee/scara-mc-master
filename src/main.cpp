@@ -57,7 +57,7 @@ int send_command(int slave, int command, int data){
 // primes all slaves, sending each a command and command data
 void run_command(int command, int data[slave_count], int l_slave_count){
   for (int l_slave = 0; l_slave < l_slave_count; l_slave++) {
-    //send command to the slave, with appropriate data atached
+    //send command to the slave, with appropriate data attached
     send_command(l_slave, command, data[l_slave]);
     // TODO: Error handling not implemented!
   }
