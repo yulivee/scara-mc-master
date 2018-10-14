@@ -7,8 +7,9 @@
 // 18: TX1 (mislabled) - communication bus to slaves
 // 19: RX1 (mislabeld) - communication bus to slaves
 //--------------------
-int prime_pins[7] = {22,23,24,25,26,27,28}; //priming wires tell slaves when they can use the bus
-int fire_pin = 29; // fire wire to run a command on all slaves at once
+const int slave_count = 7;
+const int prime_pins[slave_count] = {22,23,24,25,26,27,28}; //priming wires tell slaves when they can use the bus
+const int fire_pin = 29; // fire wire to run a command on all slaves at once
 
 //--------------------
 // VARIABLES
@@ -52,12 +53,16 @@ int send_command(int slave, int command, int data){
   return 1;
 }
 
-//TODO
-void prime_slaves(int command, int data[7]){
-  for (int i = 0; i < prime_pins[].length; i++) {
+// primes all slaves, sending each send a command and command data
+void run_command(int command, int data[slave_count]){
+  for (int slave = 0; slave < slave_count; slave++) {
     //send command to the slave, with appropriate data atached
-    //TODO
+    send_command(slave, command, data[slave]);
+    // TODO: Error handling not implemented!
   }
+  digitalWrite(fire_pin,1);
+  delayMicroseconds(50);
+  digitalWrite(fire_pin,0);
 }
 
 //--------------------
