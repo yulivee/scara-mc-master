@@ -8,8 +8,9 @@
 // 19: RX1 (mislabeld) - communication bus to slaves
 //--------------------
 const int slave_count = 7;
-const int prime_pins[slave_count] = {22,23,24,25,26,27,28}; //priming wires tell slaves when they can use the bus
+const int prime_pins[7] = {22,23,24,25,26,27,28}; //priming wires tell slaves when they can use the bus
 const int fire_pin = 29; // fire wire to run a command on all slaves at once
+int null_data[7] = {0,0,0,0,0,0,0};
 
 //--------------------
 // VARIABLES
@@ -53,11 +54,11 @@ int send_command(int slave, int command, int data){
   return 1;
 }
 
-// primes all slaves, sending each send a command and command data
-void run_command(int command, int data[slave_count]){
-  for (int slave = 0; slave < slave_count; slave++) {
+// primes all slaves, sending each a command and command data
+void run_command(int command, int data[slave_count], int l_slave_count){
+  for (int l_slave = 0; l_slave < l_slave_count; l_slave++) {
     //send command to the slave, with appropriate data atached
-    send_command(slave, command, data[slave]);
+    send_command(l_slave, command, data[l_slave]);
     // TODO: Error handling not implemented!
   }
   digitalWrite(fire_pin,1);
@@ -83,8 +84,13 @@ void loop() {
 
   // read from port 0 (PC), send to port 1(Slave):
   if (Serial.available()) {
-    //int inByte = Serial.read();
-    serial1_write_int(-300);
-    //Serial1.write(inByte);
+    int inByte = Serial.read();
+    switch (inByte) {
+      case 0:
+      //ping slave;
+      Serial.println("Running Ping");
+      //TODO PING FUNCTION
+
+    }
   }
 }
