@@ -4,7 +4,7 @@ Command Numbers:
   2
   3
   4
-  5   activate_PID
+  5   set_pid_state
   6   get_position
   7
   8

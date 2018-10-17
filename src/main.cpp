@@ -35,15 +35,15 @@ int serial1_read_int(){
   return val;
 }
 
-// send a command and command data to target slave, returns -1 if an error occurs
+// send a command and command data to target slave, error returns -1, success returns 1
 int send_command(int slave, int command, int data){
   // prime slave
   digitalWrite(slave,1);
-  // wait for ready message (slave, sends its number)
+  // wait for ready message (slave sends its number)
   int ready_msg = serial1_read_int();
   // check validity of ready message
   if ( ready_msg != slave) {
-    // Error
+    // Error!
     return -1;
   }
   //send command
@@ -58,13 +58,28 @@ int send_command(int slave, int command, int data){
 void run_command(int command, int data[slave_count], int l_slave_count){
   for (int l_slave = 0; l_slave < l_slave_count; l_slave++) {
     //send command to the slave, with appropriate data attached
-    send_command(l_slave, command, data[l_slave]);
-    // TODO: Error handling not implemented!
+    if (send_command(l_slave, command, data[l_slave]) != -1){
+      //Error!
+    }
   }
   digitalWrite(fire_pin,1);
   delayMicroseconds(50);
   digitalWrite(fire_pin,0);
 }
+
+
+//Command: Ping, Command Number: 0
+//sends a command data package to a single slave that the slave echoes back, error returns -1, success returns 1
+int ping_slave(int slave, int message){
+  if (send_command(slave,0,message) != -1) {
+    //Error!
+  }
+  int echo = serial1_read_int();
+  if (echo != message) {
+    //Error!
+  }
+  return echo;
+};
 
 //--------------------
 // MAIN
@@ -77,19 +92,22 @@ void setup() {
 
 void loop() {
   // read from port 1(Slave), send to port 0(PC):
-  if (Serial1.available()) {
-    int inByte = Serial1.read();
-    Serial.write(inByte);
-  }
+  // if (Serial1.available()) {
+  //   int inByte = Serial1.read();
+  //   Serial.write(inByte);
+  // }
 
-  // read from port 0 (PC), send to port 1(Slave):
+  // read from port 0 (PC), send to port 1(Slaves):
   if (Serial.available()) {
     int inByte = Serial.read();
     switch (inByte) {
       case 0:
       //ping slave;
       Serial.println("Running Ping");
-      //TODO PING FUNCTION
+      //ping slave 0
+      Serial.println(ping_slave(0, 11111));
+      //ping slave 1
+      Serial.println(ping_slave(1, 22222));
 
     }
   }
