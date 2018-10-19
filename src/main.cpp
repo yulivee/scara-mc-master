@@ -7,10 +7,14 @@
 // 18: TX1 (mislabled) - communication bus to slaves
 // 19: RX1 (mislabeld) - communication bus to slaves
 //--------------------
+
+//Error handler umsetzten als Globale variable, überlegung ob nur 1 verschachtelung
+
 const int slave_count = 7;
 const int prime_pins[7] = {22,23,24,25,26,27,28}; //priming wires tell slaves when they can use the bus
 const int fire_pin = 29; // fire wire to run a command on all slaves at once
 int null_data[7] = {0,0,0,0,0,0,0};
+int error_handler = 0;
 
 //--------------------
 // VARIABLES
@@ -26,6 +30,8 @@ void serial1_write_int(int val){
   Serial1.write(highByte(val));
 }
 
+//slack intern (privat)
+
 // read integer as 2 byte package from serial bus 1
 int serial1_read_int(){
   byte byte_buffer[2];
@@ -37,8 +43,9 @@ int serial1_read_int(){
 
 // send a command and command data to target slave, error returns -1, success returns 1
 int send_command(int slave, int command, int data){
+  serial1_clear();
   // prime slave
-  digitalWrite(slave,1);
+  digitalWrite(prime_pins[slave],1);
   // wait for ready message (slave sends its number)
   int ready_msg = serial1_read_int();
   // check validity of ready message
@@ -58,7 +65,7 @@ int send_command(int slave, int command, int data){
 void run_command(int command, int data[slave_count], int l_slave_count){
   for (int l_slave = 0; l_slave < l_slave_count; l_slave++) {
     //send command to the slave, with appropriate data attached
-    if (send_command(l_slave, command, data[l_slave]) != -1){
+    if (send_command(l_slave, command, data[l_slave]) <0){
       //Error!
     }
   }
@@ -70,16 +77,23 @@ void run_command(int command, int data[slave_count], int l_slave_count){
 
 //Command: Ping, Command Number: 0
 //sends a command data package to a single slave that the slave echoes back, error returns -1, success returns 1
-int ping_slave(int slave, int message){
-  if (send_command(slave,0,message) != -1) {
+void ping_slave(int slave, int message, *error_handler){
+  if (send_command(slave,0,message) < 0) {
     //Error!
+    *error_handler= -1;
+    return;
   }
+
   int echo = serial1_read_int();
   if (echo != message) {
     //Error!
-  }
-  return echo;
-};
+    *error_handler= -2;
+}
+}
+
+void test(int *result) {
+  *result = 1;
+}
 
 //--------------------
 // MAIN
@@ -105,9 +119,9 @@ void loop() {
       //ping slave;
       Serial.println("Running Ping");
       //ping slave 0
-      Serial.println(ping_slave(0, 11111));
+      Serial.println(ping_slave(0, 11111,&error_handler));
       //ping slave 1
-      Serial.println(ping_slave(1, 22222));
+      Serial.println(ping_slave(1, 22222,&error_handler));
 
     }
   }
