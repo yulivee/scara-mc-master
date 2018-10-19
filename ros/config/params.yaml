@@ -1,0 +1,125 @@
+# ------------------------------------
+# Configuration file for Scara Robot
+# Date: 2018-04-03
+#-------------------------------------
+z: # joint 1
+        pid:    # values for the pid controller
+                p:   15
+                i:   0.6   
+                d:   12
+                max:         255
+                i_max:       100
+                freq:        100
+        gears:	# n= numerator, d= denominator, gear ration caculated with n/d
+		n:	2448
+		d:	121
+		roundvalue:	20.23
+		clicksperdeg:	
+			n:	605
+			d:	408
+			roundvalue:	1.48
+
+shoulder: # joint 2
+        pid:    # values for the pid controller
+                p:   15
+                i:   0.6   
+                d:   12
+                max:         255
+                i_max:       100
+                freq:        100
+        gears:	# n= numerator, d= denominator, gear ration caculated with n/d
+		n:	2448
+		d:	121
+		roundvalue:	20.23
+		clicksperdeg:	
+			n:	605
+			d:	408
+			roundvalue:	1.48
+
+uae: # joint 3
+        pid:    # values for the pid controller
+                p:   15
+                i:   0.6   
+                d:   12
+                max:         255
+                i_max:       100
+                freq:        100
+        gears:	# n= numerator, d= denominator, gear ration caculated with n/d
+		n:	2448
+		d:	121
+		roundvalue:	20.23
+		clicksperdeg:	
+			n:	605
+			d:	408
+			roundvalue:	1.48
+
+uaj: # joint 4
+        pid:    # values for the pid controller
+                p:   15
+                i:   0.6   
+                d:   12
+                max:         255
+                i_max:       100
+                freq:        100
+        gears:	# n= numerator, d= denominator, gear ration caculated with n/d
+		n:	2448
+		d:	121
+		roundvalue:	20.23
+		clicksperdeg:	
+			n:	605
+			d:	408
+			roundvalue:	1.48
+
+skf: # joint 5
+        pid:    # values for the pid controller
+                p:   15
+                i:   0.6   
+                d:   12
+                max:         255
+                i_max:       100
+                freq:        100
+        gears:	# n= numerator, d= denominator, gear ration caculated with n/d
+		n:	2448
+		d:	121
+		roundvalue:	20.23
+		clicksperdeg:	
+			n:	605
+			d:	408
+			roundvalue:	1.48
+
+ske: # joint 6
+        pid:    # values for the pid controller
+                p:   15
+                i:   0.6   
+                d:   12
+                max:         255
+                i_max:       100
+                freq:        100
+        gears:	# n= numerator, d= denominator, gear ration caculated with n/d
+		n:	2448
+		d:	121
+		roundvalue:	20.23
+		clicksperdeg:	
+			n:	605
+			d:	408
+			roundvalue:	1.48
+
+skg: # gripper
+        pid:    # values for the pid controller
+                p:   15
+                i:   0.6   
+                d:   12
+                max:         255
+                i_max:       100
+                freq:        100
+        gears:	# n= numerator, d= denominator, gear ration caculated with n/d
+		n:	2448
+		d:	121
+		roundvalue:	20.23
+		clicksperdeg:	
+			n:	605
+			d:	408
+			roundvalue:	1.48
+
+
+# https://en.wikipedia.org/wiki/YAML#Syntax                
