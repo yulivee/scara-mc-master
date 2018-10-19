@@ -30,8 +30,6 @@ void serial1_write_int(int val){
   Serial1.write(highByte(val));
 }
 
-//slack intern (privat)
-
 // read integer as 2 byte package from serial bus 1
 int serial1_read_int(){
   byte byte_buffer[2];
@@ -39,6 +37,13 @@ int serial1_read_int(){
   // convert buffer to conv_integer
   int val = ((byte_buffer[1]) << 8) + byte_buffer[0];
   return val;
+}
+
+//
+void serial1_clear(){
+  while (Serial1.available() > 0) {
+    Serial1.read();
+  }
 }
 
 // send a command and command data to target slave, error returns -1, success returns 1
@@ -77,18 +82,20 @@ void run_command(int command, int data[slave_count], int l_slave_count){
 
 //Command: Ping, Command Number: 0
 //sends a command data package to a single slave that the slave echoes back, error returns -1, success returns 1
-void ping_slave(int slave, int message, *error_handler){
+int ping_slave(int slave, int message, int *error_handler){
   if (send_command(slave,0,message) < 0) {
     //Error!
-    *error_handler= -1;
-    return;
+    //*error_handler= -1;
+    //return;
   }
 
   int echo = serial1_read_int();
   if (echo != message) {
     //Error!
-    *error_handler= -2;
+    //*error_handler= -2;
+    return -1;
 }
+return 1;
 }
 
 void test(int *result) {
@@ -114,15 +121,17 @@ void loop() {
   // read from port 0 (PC), send to port 1(Slaves):
   if (Serial.available()) {
     int inByte = Serial.read();
-    switch (inByte) {
-      case 0:
+    Serial.println(inByte);
       //ping slave;
       Serial.println("Running Ping");
       //ping slave 0
+      Serial.println("Pinging slave 0:");
       Serial.println(ping_slave(0, 11111,&error_handler));
+
+
       //ping slave 1
+      Serial.println("Pinging slave 1:");
       Serial.println(ping_slave(1, 22222,&error_handler));
 
-    }
   }
 }
