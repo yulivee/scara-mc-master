@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <ros.h>
-#include <std_msgs/Int32.h>
+#include <std_msgs/Int16MultiArray.h>
 #include <std_msgs/Empty.h>
 #include <comm.h>
 
@@ -12,8 +12,8 @@
 #define PID_STATE_TOPIC "SetPidState"
 
 ros::NodeHandle nh;
-std_msgs::Int32 click_msg;
-std_msgs::Int32 position_msg;
+std_msgs::Int16MultiArray click_msg;
+std_msgs::Int16MultiArray position_msg;
 
 //--------------------
 // PINOUT
@@ -26,8 +26,9 @@ std_msgs::Int32 position_msg;
 // ================================= ROS Functions =================================
 
 // callback functions for Ros Subscribers
-void DriveDistCb ( const std_msgs::Int32& clicks ) { drive_dist(clicks.data); }
-void DriveToCb ( const std_msgs::Int32& clicks ) { drive_to(clicks.data); }
+//                                 Int16MultiArray
+void DriveDistCb ( const std_msgs::Int16MultiArray& clicks ) { drive_dist(clicks.data); }
+void DriveToCb ( const std_msgs::Int16MultiArray& clicks ) { drive_to(clicks.data); }
 void HomeCb ( const std_msgs::Empty& toggle_msg ) { home(); }
 void SetPidStateCb ( const std_msgs::Empty& toggle_msg ) { set_pid_state(); }
 
@@ -35,8 +36,8 @@ void SetPidStateCb ( const std_msgs::Empty& toggle_msg ) { set_pid_state(); }
 ros::Publisher GetPosition(POSITION_TOPIC, &position_msg);
 
 // define ROS subscribers
-ros::Subscriber<std_msgs::Int32> DriveTo(DRIVE_TO_TOPIC, &DriveToCb );
-ros::Subscriber<std_msgs::Int32> DriveDistance(DRIVE_DIST_TOPIC, &DriveDistCb );
+ros::Subscriber<std_msgs::Int16MultiArray> DriveTo(DRIVE_TO_TOPIC, &DriveToCb );
+ros::Subscriber<std_msgs::Int16MultiArray> DriveDistance(DRIVE_DIST_TOPIC, &DriveDistCb );
 ros::Subscriber<std_msgs::Empty> Home(HOME_TOPIC, &HomeCb );
 ros::Subscriber<std_msgs::Empty> SetPidState(PID_STATE_TOPIC, &SetPidStateCb );
 
