@@ -58,10 +58,10 @@ int send_command(HardwareSerial &S1, int slave, int command, int data){
 
 
 // primes all slaves, sending each a command and command data
-void run_command(int command, int data[slave_count], int l_slave_count){
+void run_command(HardwareSerial &Serial, int command, int data[slave_count], int l_slave_count){
   for (int l_slave = 0; l_slave < l_slave_count; l_slave++) {
     //send command to the slave, with appropriate data attached
-    if (send_command(l_slave, command, data[l_slave]) <0){
+    if (send_command(Serial,l_slave, command, data[l_slave]) <0){
       //Error!
     }
   }
@@ -72,14 +72,14 @@ void run_command(int command, int data[slave_count], int l_slave_count){
 
 //Command: Ping, Command Number: 0
 //sends a command data package to a single slave that the slave echoes back, error returns -1, success returns 1
-int ping_slave(int slave, int message, int *error_handler){
-  if (send_command(slave,0,message) < 0) {
+int ping_slave(HardwareSerial &Serial, int slave, int message, int *error_handler){
+  if (send_command(Serial, slave,0,message) < 0) {
     //Error!
     //*error_handler= -1;
     //return;
   }
 
-  int echo = serial_read_int();
+  int echo = serial_read_int(Serial);
   if (echo != message) {
     //Error!
     //*error_handler= -2;
@@ -89,6 +89,20 @@ return 1;
 }
 
 void test(HardwareSerial &S1, HardwareSerial &S0, int *result) {
-  send_command(S1, 0, 0, 0);
-  *result = 1;
+  // send_command(S1, 0, 0, 0);
+  // *result = 1;
+  // if (Serial.available()) {
+  //   int inByte = Serial.read();
+  //   Serial.println(inByte);
+  //     //ping slave;
+  //     test(&Serial1, &Serial);
+  //     Serial.println("Running Ping");
+  //     //ping slave 0
+  //     Serial.println("Pinging slave 0:");
+  //     Serial.println(ping_slave(0, 11111,&error_handler));
+  // 
+  //
+  //     //ping slave 1
+  //     Serial.println("Pinging slave 1:");
+  //     Serial.println(ping_slave(1, 22222,&error_handler));
 }
