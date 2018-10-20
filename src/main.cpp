@@ -2,67 +2,45 @@
 #include <ros.h>
 #include <std_msgs/Int32.h>
 #include <std_msgs/Empty.h>
+#include <comm.h>
 
-#define NODE "Skg"
-#define WEC "WheelEncoderClicks"
-#define DT "DriveTo"
-#define DD "DriveDist"
-#define HOME "Home"
-#define TOG "ToggleMotor"
-
-#define CLICK_TOPIC WEC NODE
-#define DRIVE_TO_TOPIC DT NODE
-#define DRIVE_DIST_TOPIC DD NODE
-#define HOME_TOPIC HOME NODE
-#define TOGGLE_TOPIC TOG NODE
+#define POSITION_TOPIC "GetPos"
+#define CLICK_TOPIC "WheelEncoderClicks"
+#define DRIVE_TO_TOPIC "DriveTo"
+#define DRIVE_DIST_TOPIC "DriveDist"
+#define HOME_TOPIC "Home"
+#define PID_STATE_TOPIC "SetPidState"
 
 ros::NodeHandle nh;
 std_msgs::Int32 click_msg;
 std_msgs::Int32 position_msg;
 
+//--------------------
+// PINOUT
+// 0: RX0 - reserved for USB communication to ROS
+// 1: TX0 - reserved USB communication to ROS
+// 18: TX1 (mislabled) - communication bus to slaves
+// 19: RX1 (mislabeld) - communication bus to slaves
+//--------------------
+
 // ================================= ROS Functions =================================
 
 // callback functions for Ros Subscribers
-// we need this per axis
-void drive_dist_cb ( const std_msgs::Int32& clicks ) {
-        target_position += clicks.data;
-}
-
-// we need this per axis
-void drive_to_cb ( const std_msgs::Int32& clicks ) {
-        target_position = clicks.data;
-}
-
-// we need this per axis
-void home_cb ( const std_msgs::Empty& toggle_msg ) {
-        motor_cnt = 0;
-        target_position = motor_cnt;
-}
-
-// we need this per axis
-void toggle_motor_cb ( const std_msgs::Empty& toggle_msg ) {
-    target_position = motor_cnt;
-    digitalWrite(motor_pins.left, 0);
-    digitalWrite(motor_pins.right, 0);
-    digitalWrite(motor_pins.enable, !digitalRead(motor_pins.enable));
-}
+void DriveDistCb ( const std_msgs::Int32& clicks ) { drive_dist(clicks.data); }
+void DriveToCb ( const std_msgs::Int32& clicks ) { drive_to(clicks.data); }
+void HomeCb ( const std_msgs::Empty& toggle_msg ) { home(); }
+void SetPidStateCb ( const std_msgs::Empty& toggle_msg ) { set_pid_state(); }
 
 // define ROS publishers
-ros::Publisher wheel_encoder_clicks(CLICK_TOPIC, &click_msg);
-ros::Publisher get_position(POSITION_TOPIC, &position_msg);
+ros::Publisher GetPosition(POSITION_TOPIC, &position_msg);
 
 // define ROS subscribers
-ros::Subscriber<std_msgs::Int32> drive_to(DRIVE_TO_TOPIC, &drive_to_cb );
-ros::Subscriber<std_msgs::Int32> drive_distance(DRIVE_DIST_TOPIC, &drive_dist_cb );
-ros::Subscriber<std_msgs::Empty> home(HOME_TOPIC, &home_cb );
-ros::Subscriber<std_msgs::Empty> toggle_motor(TOGGLE_TOPIC, &toggle_motor_cb );
+ros::Subscriber<std_msgs::Int32> DriveTo(DRIVE_TO_TOPIC, &DriveToCb );
+ros::Subscriber<std_msgs::Int32> DriveDistance(DRIVE_DIST_TOPIC, &DriveDistCb );
+ros::Subscriber<std_msgs::Empty> Home(HOME_TOPIC, &HomeCb );
+ros::Subscriber<std_msgs::Empty> SetPidState(PID_STATE_TOPIC, &SetPidStateCb );
 
 // =================================================================================
-
-void serial_write_int(int val){
-  Serial1.write(lowByte(val));
-  Serial1.write(highByte(val));
-}
 
 void setup() {
   // initialize both serial ports:
@@ -71,11 +49,11 @@ void setup() {
   
     //Initialise Ros Node, publisher and subsribers
     nh.initNode();
-    nh.advertise(get_position);
-    nh.subscribe(drive_to);
-    nh.subscribe(drive_distance);
-    nh.subscribe(home);
-    nh.subscribe(toggle_motor);
+    nh.advertise(GetPosition);
+    nh.subscribe(DriveTo);
+    nh.subscribe(DriveDistance);
+    nh.subscribe(Home);
+    nh.subscribe(SetPidState);
     
     //Set baud rate for Ros serial communication
     nh.getHardware()->setBaud(57600);
@@ -85,22 +63,9 @@ void loop() {
   // wait until the node handle has connected to ROS
   while(!nh.connected()) {nh.spinOnce();}
 
-  // read from port 1(Slave), send to port 0(PC):
-  if (Serial1.available()) {
-    int inByte = Serial1.read();
-    Serial.write(inByte);
-  }
-
-  // read from port 0 (PC), send to port 1(Slave):
-  if (Serial.available()) {
-    int inByte = Serial.read();
-    serial_write_int(-300);
-    //Serial1.write(inByte);
-  }
     //publish clicks to Ros
-    click_msg.data = motor_cnt;
-    wheel_encoder_clicks.publish( &click_msg );
-    test.publish( &test_msg );
+    click_msg.data = get_node_positions();
+    GetPosition.publish( &click_msg );
 
     //cyclical communication with Ros Master
     nh.spinOnce();
