@@ -47,7 +47,13 @@ void setup() {
   // initialize both serial ports:
   Serial.begin(9600);
   Serial1.begin(9600);
-  
+
+  // Daniels test code starts here, must run before any ROS code! Comment out
+  init_Comm();
+  // test();
+  //Test function contains an infinite while-loop, if not commented out code will not prograss past this point!
+  // Daniels test code ends here
+
     //Initialise Ros Node, publisher and subsribers
     nh.initNode();
     nh.advertise(GetPosition);
@@ -55,7 +61,7 @@ void setup() {
     nh.subscribe(DriveDistance);
     nh.subscribe(Home);
     nh.subscribe(SetPidState);
-    
+
     //Set baud rate for Ros serial communication
     nh.getHardware()->setBaud(57600);
 }

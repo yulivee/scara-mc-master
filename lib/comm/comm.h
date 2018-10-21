@@ -1,9 +1,12 @@
 #ifndef COMM_H_INCLUDED
 #define COMM_H_INCLUDED
 
-void test(HardwareSerial &S1, HardwareSerial &S0, int *result);
+#include <Arduino.h>
 
-int ping_slave(HardwareSerial &Serial, int slave, int message, int *error_handler);
+void test();
+void init_Comm();
+
+int ping_slave(int slave, int message);
 int drive_dist( int clicks );
 int drive_to( int clicks );
 int drive_dist_max();
