@@ -47,13 +47,14 @@ int send_command(int slave, int command, int data){
   // check validity of ready message
   if ( ready_msg != slave) {
     // Error!
+    digitalWrite(prime_pins[slave],0);
     return 1;
   }
   //send command
   serial_write_int(Serial1,command);
   //send data
   serial_write_int(Serial1,data);
-  digitalWrite(slave,0);
+  digitalWrite(prime_pins[slave],0);
   return 0;
 }
 
@@ -76,18 +77,24 @@ void run_command(HardwareSerial &Serial, int command, int data[slave_count], int
 
 //Initialise all pins needed for the communication library
 void init_Comm(){
+  //initialise pins
   for (size_t i = 0; i < slave_count; i++) {
-      pinMode(prime_pins[i], OUTPUT);
+    pinMode(prime_pins[i], OUTPUT);
   }
   pinMode(fire_pin, OUTPUT);
   pinMode(led_pin, OUTPUT);
-  digitalWrite(led_pin,1);
-  delay(100);
+
+  //set all pins to zero
+  for (size_t i = 0; i < slave_count; i++) {
+    digitalWrite(prime_pins[i], 0);
+  }
+  digitalWrite(fire_pin,0);
   digitalWrite(led_pin,0);
 }
 
 //Command: Ping, Command Number: 0
-//sends a command data package to a single slave that the slave echoes back, error returns -1, success returns 1
+//sends a command data package to a single slave that the slave echoes back
+// error returns 1, success returns 0
 int ping_slave(int slave, int message){
   if (send_command(slave,0,message) < 0) {
     //Error!
@@ -95,36 +102,42 @@ int ping_slave(int slave, int message){
     //return;
   }
 
-  int echo = serial_read_int(Serial);
+  //check if slave echoed data correctly
+  int echo = serial_read_int(Serial1);
+  //debug
+  Serial.println(echo);
   if (echo != message) {
     //Error!
     //*error_handler= -2;
-    return -1;
-}
-return 1;
+    return 1;
+  }
+  return 0;
 }
 
 void test(){//HardwareSerial &Serial, HardwareSerial &Serial1) {
   while (true) {
 
-     if (Serial.available()) {
-       digitalWrite(led_pin,1);
-       int inByte = Serial.read();
-       Serial.println(inByte);
-         //ping slave;
-       Serial.println("Running Ping");
-        //ping slave 0
-         Serial.println("Pinging slave 0:");
-         int result =  ping_slave(0, 11111);
-         Serial.println(result);
-        //ping slave 1
-         Serial.println("Pinging slave 1:");
-         result =  ping_slave(2, 22222);
-         Serial.println(result);
+    if (Serial.available()) {
+      digitalWrite(led_pin,1);
+      char inByte = Serial.read();
+      Serial.println(inByte);
+      //ping slave;
+      Serial.println("Running Ping");
+      //ping slave 0
+      Serial.println("Pinging slave 0:");
+      int result =  ping_slave(0, 11111);
+      Serial.println(result);
+      //ping slave 1
+      Serial.println("Pinging slave 1:");
+      result =  ping_slave(1, 22222);
+      Serial.println(result);
+
+      serial_clear(Serial);
+      digitalWrite(led_pin,0);
     }
 
     delay(50);
-    digitalWrite(led_pin,0);
+
   }
 }
 

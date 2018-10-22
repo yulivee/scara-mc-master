@@ -1,5 +1,5 @@
 Command Numbers:
-  0   ping                pings slave to check if slave is reachable
+  0   ping  pings slave to check if slave is reachable, slave echoes received data immediately
   1   home
   2
   3

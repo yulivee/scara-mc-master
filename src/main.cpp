@@ -50,31 +50,33 @@ void setup() {
 
   // Daniels test code starts here, must run before any ROS code! Comment out
   init_Comm();
-  // test();
+  //test();
   //Test function contains an infinite while-loop, if not commented out code will not prograss past this point!
   // Daniels test code ends here
 
-    //Initialise Ros Node, publisher and subsribers
-    nh.initNode();
-    nh.advertise(GetPosition);
-    nh.subscribe(DriveTo);
-    nh.subscribe(DriveDistance);
-    nh.subscribe(Home);
-    nh.subscribe(SetPidState);
+  //send hug to working buddy
 
-    //Set baud rate for Ros serial communication
-    nh.getHardware()->setBaud(57600);
+  //Initialise Ros Node, publisher and subsribers
+  nh.initNode();
+  nh.advertise(GetPosition);
+  nh.subscribe(DriveTo);
+  nh.subscribe(DriveDistance);
+  nh.subscribe(Home);
+  nh.subscribe(SetPidState);
+
+  //Set baud rate for Ros serial communication
+  nh.getHardware()->setBaud(57600);
 }
 
 void loop() {
   // wait until the node handle has connected to ROS
   while(!nh.connected()) {nh.spinOnce();}
 
-    //publish clicks to Ros
-    click_msg.data = get_node_positions();
-    GetPosition.publish( &click_msg );
+  //publish clicks to Ros
+  click_msg.data = get_node_positions();
+  GetPosition.publish( &click_msg );
 
-    //cyclical communication with Ros Master
-    nh.spinOnce();
-    _delay_ms(500);
+  //cyclical communication with Ros Master
+  nh.spinOnce();
+  _delay_ms(500);
 }

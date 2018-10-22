@@ -1,0 +1,15 @@
+This details the Handshake between the Master and the Slave Arduino devices for Communication over the serial bus.
+
+Master: set prime-pin High
+Slave:  clear serial buffer
+Slave:  send slave_number to master
+Master: check validity of slave_number
+Master: send command byte
+Master: send data byte
+(optional) Slave:   generate checksum
+(optional) Slave:   send checksum to master
+(optional) Master:  check validity of checksum
+Master: set prime_pin Low
+Slave: process received command and data
+Slave   (if necessary): send requested data to master
+Master  (if necessary): process received data
