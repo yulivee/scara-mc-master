@@ -27,7 +27,7 @@ std_msgs::Int16MultiArray position_msg;
 
 // callback functions for Ros Subscribers
 //                                 Int16MultiArray
-void DriveDistCb ( const std_msgs::Int16MultiArray& clicks ) { drive_dist(clicks.data); }
+//void DriveDistCb ( const std_msgs::Int16MultiArray& clicks ) { drive_dist(clicks.data); }
 void DriveToCb ( const std_msgs::Int16MultiArray& clicks ) { drive_to(clicks.data); }
 void HomeCb ( const std_msgs::Empty& toggle_msg ) { home(); }
 void SetPidStateCb ( const std_msgs::Empty& toggle_msg ) { set_pid_state(); }
@@ -37,7 +37,7 @@ ros::Publisher GetPosition(POSITION_TOPIC, &position_msg);
 
 // define ROS subscribers
 ros::Subscriber<std_msgs::Int16MultiArray> DriveTo(DRIVE_TO_TOPIC, &DriveToCb );
-ros::Subscriber<std_msgs::Int16MultiArray> DriveDistance(DRIVE_DIST_TOPIC, &DriveDistCb );
+//ros::Subscriber<std_msgs::Int16MultiArray> DriveDistance(DRIVE_DIST_TOPIC, &DriveDistCb );
 ros::Subscriber<std_msgs::Empty> Home(HOME_TOPIC, &HomeCb );
 ros::Subscriber<std_msgs::Empty> SetPidState(PID_STATE_TOPIC, &SetPidStateCb );
 
@@ -50,7 +50,7 @@ void setup() {
 
   // Daniels test code starts here, must run before any ROS code! Comment out
   init_Comm();
-  //test();
+  test();
   //Test function contains an infinite while-loop, if not commented out code will not prograss past this point!
   // Daniels test code ends here
 
@@ -60,7 +60,7 @@ void setup() {
   nh.initNode();
   nh.advertise(GetPosition);
   nh.subscribe(DriveTo);
-  nh.subscribe(DriveDistance);
+  //nh.subscribe(DriveDistance);
   nh.subscribe(Home);
   nh.subscribe(SetPidState);
 

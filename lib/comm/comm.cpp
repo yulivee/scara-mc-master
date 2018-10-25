@@ -3,7 +3,7 @@
 //--------------------
 // VARIABLES
 //--------------------
-const int slave_count = 7;
+const int slave_count = 2; //7
 //priming wires tell slaves when they can use the bus
 const int prime_pins[7] = {22,23,24,25,26,27,28};
 // fire wire to run a command on all slaves at once
@@ -58,19 +58,6 @@ int send_command(int slave, int command, int data){
   return 0;
 }
 
-// primes all slaves, sending each a command and command data
-void run_command(HardwareSerial &Serial, int command, int data[slave_count], int l_slave_count){
-  for (int l_slave = 0; l_slave < l_slave_count; l_slave++) {
-    //send command to the slave, with appropriate data attached
-    if (send_command(l_slave, command, data[l_slave]) <0){
-      //Error!
-    }
-  }
-  digitalWrite(fire_pin,1);
-  delayMicroseconds(50);
-  digitalWrite(fire_pin,0);
-}
-
 //--------------------
 // EXTERNAL FUNCTIONS
 //--------------------
@@ -104,8 +91,6 @@ int ping_slave(int slave, int message){
 
   //check if slave echoed data correctly
   int echo = serial_read_int(Serial1);
-  //debug
-  Serial.println(echo);
   if (echo != message) {
     //Error!
     //*error_handler= -2;
@@ -114,24 +99,53 @@ int ping_slave(int slave, int message){
   return 0;
 }
 
+// drive Motors ammounts of click
+int drive_dist( int clicks[slave_count]){
+  int command = 10;
+  for (int i = 0; i < slave_count; i++) {
+    //send command to the slave, with appropriate data attachedd
+    if (send_command(i, command, clicks[i]) >0){
+      //Error!
+      return 1;
+    }
+  }
+  digitalWrite(fire_pin,1);
+  delayMicroseconds(50);
+  digitalWrite(fire_pin,0);
+  return 0;
+}
+
+//--------------------------
+// Test Function
+//--------------------------
 void test(){//HardwareSerial &Serial, HardwareSerial &Serial1) {
+  int result;
   while (true) {
 
     if (Serial.available()) {
       digitalWrite(led_pin,1);
       char inByte = Serial.read();
-      Serial.println(inByte);
-      //ping slave;
-      Serial.println("Running Ping");
-      //ping slave 0
-      Serial.println("Pinging slave 0:");
-      int result =  ping_slave(0, 11111);
-      Serial.println(result);
-      //ping slave 1
-      Serial.println("Pinging slave 1:");
-      result =  ping_slave(1, 22222);
-      Serial.println(result);
-
+      switch (inByte) {
+        case 'p':
+        //test ping
+        Serial.println(inByte);
+        //ping slave;
+        Serial.println("Running Ping");
+        //ping slave 0
+        Serial.println("Pinging slave 0:");
+        result =  ping_slave(0, 11111);
+        Serial.println(result);
+        //ping slave 1
+        Serial.println("Pinging slave 1:");
+        result =  ping_slave(1, 22222);
+        Serial.println(result);
+        case 'd':
+        //test drive_to
+        Serial.println("Running drive_dist");
+        int clicks[2] = {100,100};
+        result = drive_dist(clicks);
+        Serial.println(result);
+      }
       serial_clear(Serial);
       digitalWrite(led_pin,0);
     }
@@ -141,9 +155,8 @@ void test(){//HardwareSerial &Serial, HardwareSerial &Serial1) {
   }
 }
 
-int drive_dist( int clicks ){
-  return 0;
-}
+
+
 int drive_to( int clicks ){
   return 0;
 };
