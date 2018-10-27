@@ -3,7 +3,7 @@
 //--------------------
 // VARIABLES
 //--------------------
-const int slave_count = 2; //7
+const int slave_count = 7; //7
 //priming wires tell slaves when they can use the bus
 const int prime_pins[7] = {22,23,24,25,26,27,28};
 // fire wire to run a command on all slaves at once
@@ -99,9 +99,12 @@ int ping_slave(int slave, int message){
   return 0;
 }
 
-// drive Motors ammounts of click
-int drive_dist( int clicks[slave_count]){
-  int command = 10;
+// drive Motors amounts of click
+int drive_dist( int clicks[]){
+  digitalWrite(13,1);
+  delay(5);
+  digitalWrite(13,0);
+  /* int command = 10;
   for (int i = 0; i < slave_count; i++) {
     //send command to the slave, with appropriate data attachedd
     if (send_command(i, command, clicks[i]) >0){
@@ -113,6 +116,7 @@ int drive_dist( int clicks[slave_count]){
   delayMicroseconds(50);
   digitalWrite(fire_pin,0);
   return 0;
+  */
 }
 
 //--------------------------
@@ -142,9 +146,9 @@ void test(){//HardwareSerial &Serial, HardwareSerial &Serial1) {
         case 'd':
         //test drive_to
         Serial.println("Running drive_dist");
-        int clicks[2] = {100,100};
-        result = drive_dist(clicks);
-        Serial.println(result);
+        //int clicks[2] = {100,100};
+        //result = drive_dist(clicks);
+        //Serial.println(result);
       }
       serial_clear(Serial);
       digitalWrite(led_pin,0);
@@ -157,7 +161,7 @@ void test(){//HardwareSerial &Serial, HardwareSerial &Serial1) {
 
 
 
-int drive_to( int clicks ){
+int drive_to( int clicks[] ){
   return 0;
 };
 int drive_dist_max(){
