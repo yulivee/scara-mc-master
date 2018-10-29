@@ -2,21 +2,16 @@
 #include <ros.h>
 #include <std_msgs/Int16MultiArray.h>
 #include <std_msgs/Empty.h>
+#include <std_msgs/Bool.h>
 #include <std_msgs/String.h>
 #include <comm.h>
-
-#define POSITION_TOPIC "GetPos"
-#define CLICK_TOPIC "WheelEncoderClicks"
-#define DRIVE_TO_TOPIC "DriveTo"
-#define DRIVE_DIST_TOPIC "DriveDist"
-#define HOME_TOPIC "Home"
-#define PID_STATE_TOPIC "SetPidState"
-#define DEBUG_TOPIC "Debug"
+#include <rosbridge.h>
 
 ros::NodeHandle nh;
 std_msgs::Int16MultiArray click_msg;
 std_msgs::Int16MultiArray position_msg;
 std_msgs::String debug_msg;
+std_msgs::Bool pid_state_msg;
 
 int toggle_startup = 1;
 
@@ -37,25 +32,24 @@ int toggle_startup = 1;
 ros::Publisher GetPosition(POSITION_TOPIC, &position_msg);
 ros::Publisher Debug(DEBUG_TOPIC, &debug_msg);
 
-//void DriveDistCb ( const std_msgs::Int16MultiArray& clicks ) { drive_dist(clicks.data); }
-void DriveToCb ( const std_msgs::Int16MultiArray& clicks ) { drive_to(clicks.data); position_msg.data = clicks.data; GetPosition.publish( &position_msg );}
+void DriveDistCb ( const std_msgs::Int16MultiArray& clicks ) { drive_dist(clicks.data); }
+void DriveToCb ( const std_msgs::Int16MultiArray& clicks ) { drive_to(clicks.data); }
 void HomeCb ( const std_msgs::Empty& toggle_msg ) { home(); }
-void SetPidStateCb ( const std_msgs::Empty& toggle_msg ) { set_pid_state(); }
+void SetPidStateCb ( const std_msgs::Bool& pid_state_msg ) { pid_state_msg.data ? set_pid_state(1) : set_pid_state(0); }
 
 // define ROS subscribers
 ros::Subscriber<std_msgs::Int16MultiArray> DriveTo(DRIVE_TO_TOPIC, &DriveToCb );
-//ros::Subscriber<std_msgs::Int16MultiArray> DriveDistance(DRIVE_DIST_TOPIC, &DriveDistCb );
+ros::Subscriber<std_msgs::Int16MultiArray> DriveDistance(DRIVE_DIST_TOPIC, &DriveDistCb );
 ros::Subscriber<std_msgs::Empty> Home(HOME_TOPIC, &HomeCb );
-ros::Subscriber<std_msgs::Empty> SetPidState(PID_STATE_TOPIC, &SetPidStateCb );
+ros::Subscriber<std_msgs::Bool> SetPidState(PID_STATE_TOPIC, &SetPidStateCb );
 
 // =================================================================================
 
 void setup() {
 
-   char pos_label = "position";
    int data[7] = { 0, 0, 0, 0, 0, 0, 0 };
    position_msg.data_length = 7;
-   position_msg.layout.dim[0].label = pos_label;
+   position_msg.layout.dim[0].label = "position";
    position_msg.layout.dim[0].size = 7;
    position_msg.layout.dim[0].stride = 1*7;
    position_msg.layout.data_offset = 0;
@@ -64,16 +58,13 @@ void setup() {
   // Daniels test code starts here, must run before any ROS code! Comment out
   init_Comm();
   //Test function contains an infinite while-loop, if not commented out code will not prograss past this point!
-  // Daniels test code ends here
-
-  //send hug to working buddy
 
   //Initialise Ros Node, publisher and subsribers
   nh.initNode();
   nh.advertise(GetPosition);
   nh.advertise(Debug);
   nh.subscribe(DriveTo);
-  //nh.subscribe(DriveDistance);
+  nh.subscribe(DriveDistance);
   nh.subscribe(Home);
   nh.subscribe(SetPidState);
 

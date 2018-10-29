@@ -7,11 +7,11 @@ void test();
 void init_Comm();
 
 int ping_slave(int slave, int message);
-int drive_dist( int clicks );
-int drive_to( int clicks );
+int drive_dist( int clicks[] );
+int drive_to( int clicks[] );
 int drive_dist_max();
 int home();
-int set_pid_state();
+int set_pid_state( bool pid_state );
 int get_node_positions();
 
 #endif
