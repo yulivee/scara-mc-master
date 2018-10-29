@@ -126,7 +126,6 @@ int drive_dist( int clicks[SLAVE_COUNT]){
       //Error!
       return 2;
    }
-    return 0;
   }
   digitalWrite(fire_pin,1);
   delayMicroseconds(50);
@@ -161,9 +160,9 @@ void test(){//HardwareSerial &Serial, HardwareSerial &Serial1) {
         case 'd':
         //test drive_to
         Serial.println("Running drive_dist");
-        int clicks[2] = {100,100};
-        result = drive_dist(clicks);
-        Serial.println(result);
+        //int clicks[2] = {100,100};
+        //result = drive_dist(clicks);
+        //Serial.println(result);
       }
       serial_clear(Serial);
       digitalWrite(led_pin,0);
@@ -176,7 +175,7 @@ void test(){//HardwareSerial &Serial, HardwareSerial &Serial1) {
 
 
 
-int drive_to( int clicks ){
+int drive_to( int clicks[] ){
   return 0;
 };
 int drive_dist_max(){
