@@ -45,12 +45,22 @@ ros::Subscriber<std_msgs::Empty> SetPidState(PID_STATE_TOPIC, &SetPidStateCb );
 
 void setup() {
   // initialize both serial ports:
-  Serial.begin(9600);
-  Serial1.begin(9600);
+//  Serial.begin(9600);
+  //Serial1.begin(9600);
+
+
+   char pos_label = "position";
+   position_msg.layout.dim = (std_msgs::MultiArrayDimension *) malloc(sizeof(std_msgs::MultiArrayDimension) * 2);
+   position_msg.layout.dim_length = 1;
+   position_msg.data_length = 7;
+   position_msg.layout.dim[0].label = pos_label;
+   position_msg.layout.dim[0].size = 7;
+   position_msg.layout.dim[0].stride = 1*7;
+   position_msg.layout.data_offset = 0;
+   position_msg.data = (int *)malloc(sizeof(int)*7);
 
   // Daniels test code starts here, must run before any ROS code! Comment out
-  init_Comm();
-  test();
+  //init_Comm();
   //Test function contains an infinite while-loop, if not commented out code will not prograss past this point!
   // Daniels test code ends here
 
@@ -73,8 +83,9 @@ void loop() {
   while(!nh.connected()) {nh.spinOnce();}
 
   //publish clicks to Ros
-  click_msg.data = get_node_positions();
-  GetPosition.publish( &click_msg );
+  //  click_msg.data = get_node_positions();
+  
+  GetPosition.publish( &position_msg );
 
   //cyclical communication with Ros Master
   nh.spinOnce();
