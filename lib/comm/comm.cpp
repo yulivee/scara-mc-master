@@ -3,14 +3,31 @@
 //--------------------
 // VARIABLES
 //--------------------
-const int slave_count = 2; //7
+#define SLAVE_COUNT 2
+//normally 7
+#define BAUD_RATE 9600
+
 //priming wires tell slaves when they can use the bus
 const int prime_pins[7] = {22,23,24,25,26,27,28};
 // fire wire to run a command on all slaves at once
 const int fire_pin = 29;
 //led pin for debugging
 const int led_pin = 13;
+enum Command {
+  c_ping = 0,
+  c_home = 1,
+  c_set_pid_state = 5,
+  c_get_position = 6,
+  c_drive_dist = 10,
+  c_drive_dist_max = 11,
+  c_drive_to = 12
+};
 
+enum Errortype {
+  no_error = 0,
+  e_wrong_slave,
+  e_ping_bad_echo
+};
 //--------------------
 // INTERNAL FUNCTIONS
 //--------------------
@@ -48,14 +65,14 @@ int send_command(int slave, int command, int data){
   if ( ready_msg != slave) {
     // Error!
     digitalWrite(prime_pins[slave],0);
-    return 1;
+    return e_wrong_slave;
   }
   //send command
   serial_write_int(Serial1,command);
   //send data
   serial_write_int(Serial1,data);
   digitalWrite(prime_pins[slave],0);
-  return 0;
+  return no_error;
 }
 
 //--------------------
@@ -65,49 +82,51 @@ int send_command(int slave, int command, int data){
 //Initialise all pins needed for the communication library
 void init_Comm(){
   //initialise pins
-  for (size_t i = 0; i < slave_count; i++) {
+  for (size_t i = 0; i < SLAVE_COUNT; i++) {
     pinMode(prime_pins[i], OUTPUT);
   }
   pinMode(fire_pin, OUTPUT);
   pinMode(led_pin, OUTPUT);
 
   //set all pins to zero
-  for (size_t i = 0; i < slave_count; i++) {
+  for (size_t i = 0; i < SLAVE_COUNT; i++) {
     digitalWrite(prime_pins[i], 0);
   }
   digitalWrite(fire_pin,0);
   digitalWrite(led_pin,0);
+
+  //start serial communication to slaves
+  Serial1.begin(BAUD_RATE);
 }
 
 //Command: Ping, Command Number: 0
 //sends a command data package to a single slave that the slave echoes back
 // error returns 1, success returns 0
 int ping_slave(int slave, int message){
-  if (send_command(slave,0,message) < 0) {
-    //Error!
-    //*error_handler= -1;
-    //return;
+  int check = send_command(slave,0,message);
+  if ( check != Errortype::no_error){
+    //Errorhandling
+    return check;
   }
 
   //check if slave echoed data correctly
   int echo = serial_read_int(Serial1);
   if (echo != message) {
     //Error!
-    //*error_handler= -2;
-    return 1;
+    return e_ping_bad_echo;
   }
-  return 0;
+  return no_error;
 }
 
 // drive Motors ammounts of click
-int drive_dist( int clicks[slave_count]){
-  int command = 10;
-  for (int i = 0; i < slave_count; i++) {
+int drive_dist( int clicks[SLAVE_COUNT]){
+  for (int i = 0; i < SLAVE_COUNT; i++) {
     //send command to the slave, with appropriate data attachedd
-    if (send_command(i, command, clicks[i]) >0){
+    if (send_command(i, (int)c_drive_dist, clicks[i]) >0){
       //Error!
-      return 1;
-    }
+      return 2;
+   }
+    return 0;
   }
   digitalWrite(fire_pin,1);
   delayMicroseconds(50);
