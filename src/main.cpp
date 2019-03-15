@@ -1,3 +1,9 @@
+// --------------------------------------
+// Name: main.cpp
+// Project: scara-mc-master
+// Description: main function for the arduino master, relay ros messages to slaves
+//---------------------------------------
+
 #include <Arduino.h>
 #include <ros.h>
 #include <scara_master/AxisClicks.h>

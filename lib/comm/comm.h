@@ -1,3 +1,9 @@
+// --------------------------------------
+// Name: comm.h
+// Project: scara-mc-master
+// Description: header for comm.cpp
+//---------------------------------------
+
 #ifndef COMM_H_INCLUDED
 #define COMM_H_INCLUDED
 

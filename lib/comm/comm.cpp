@@ -1,3 +1,9 @@
+// --------------------------------------
+// Name: comm.cpp
+// Project: scara-mc-master
+// Description: implementation of multiserial communication
+//---------------------------------------
+
 #include <Arduino.h>
 
 //--------------------
