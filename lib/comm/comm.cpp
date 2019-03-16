@@ -60,78 +60,66 @@ void serial_clear(HardwareSerial &S1){
   }
 }
 
-// send a command and command data to target slave, error returns 1, success returns 0
-int send_command(int slave, int command, int data){
-  serial_clear(Serial1);
-  // prime slave
-  digitalWrite(prime_pins[slave],1);
-  // wait for ready message (slave sends its number)
-  int ready_msg = serial_read_int(Serial1);
-  // check validity of ready message
-  if ( ready_msg != slave) {
-    // Error!
-    digitalWrite(prime_pins[slave],0);
-    return e_wrong_slave;
-  }
+// send a command to slave
+int send_command(HardwareSerial &S1, int command, int data[SLAVE_COUNT], int r_data[SLAVE_COUNT]){
+  for (int slave = 0; slave < SLAVE_COUNT; slave++) {
+    // Start Transmision
+    serial_clear(S1);
+    digitalWrite(prime_pins[slave],1); // prime slave
+    int ready_msg = serial_read_int(S1); // wait for ready message
+    if ( ready_msg != slave) {   // check validity of ready message
+      // Error!
+      digitalWrite(prime_pins[slave],0);
+      return e_wrong_slave;
+    }
   //send command
-  serial_write_int(Serial1,command);
-  //send data
-  serial_write_int(Serial1,data);
-  digitalWrite(prime_pins[slave],0);
+    serial_write_int(S1,command);
+    serial_write_int(S1, data[slave]);
+    r_data[slave] = serial_read_int(S1);
+    digitalWrite(prime_pins[slave],0);
+  }
   return no_error;
 }
+
+
 
 //--------------------
 // EXTERNAL FUNCTIONS
 //--------------------
 
 //Initialise all pins needed for the communication library
-void init_Comm(){
+void init_Comm(HardwareSerial &S1){
   //initialise pins
   for (size_t i = 0; i < SLAVE_COUNT; i++) {
     pinMode(prime_pins[i], OUTPUT);
   }
-  pinMode(fire_pin, OUTPUT);
-  pinMode(led_pin, OUTPUT);
-
   //set all pins to zero
   for (size_t i = 0; i < SLAVE_COUNT; i++) {
     digitalWrite(prime_pins[i], 0);
   }
-  digitalWrite(fire_pin,0);
-  digitalWrite(led_pin,0);
-
   //start serial communication to slaves
-  Serial1.begin(BAUD_RATE);
+  S1.begin(BAUD_RATE);
 }
 
 //Command: Ping, Command Number: 0
 //sends a command data package to a single slave that the slave echoes back
 // error returns 1, success returns 0
-int ping_slave(int slave, int message){
-  int check = send_command(slave,0,message);
-  if ( check != Errortype::no_error){
-    //Errorhandling
-    return check;
-  }
-
-  //check if slave echoed data correctly
-  int echo = serial_read_int(Serial1);
-  if (echo != message) {
-    //Error!
-    return e_ping_bad_echo;
-  }
-  return no_error;
+void ping_slave(int slave, int message){
+  // if(send_command(Serial1,slave,c_ping)){
+  // serial_write_int(Serial1, message);
+  // return serial_read_int(Serial1);
+  // }
+  // return 0;
 }
 
 // drive Motors ammounts of click
 int drive_dist( int clicks[SLAVE_COUNT]){
   for (int i = 0; i < SLAVE_COUNT; i++) {
     //send command to the slave, with appropriate data attachedd
-    if (send_command(i, (int)c_drive_dist, clicks[i]) >0){
+//    if (send_command(i, (int)c_drive_dist, clicks[i]) >0){
       //Error!
-      return 2;
-   }
+//      return 2;
+//   }
   }
   digitalWrite(fire_pin,1);
   delayMicroseconds(50);
@@ -146,33 +134,33 @@ void test(){//HardwareSerial &Serial, HardwareSerial &Serial1) {
   int result;
   while (true) {
 
-    if (Serial.available()) {
-      digitalWrite(led_pin,1);
-      char inByte = Serial.read();
-      switch (inByte) {
-        case 'p':
-        //test ping
-        Serial.println(inByte);
-        //ping slave;
-        Serial.println("Running Ping");
-        //ping slave 0
-        Serial.println("Pinging slave 0:");
-        result =  ping_slave(0, 11111);
-        Serial.println(result);
-        //ping slave 1
-        Serial.println("Pinging slave 1:");
-        result =  ping_slave(1, 22222);
-        Serial.println(result);
-        case 'd':
-        //test drive_to
-        Serial.println("Running drive_dist");
-        //int clicks[2] = {100,100};
-        //result = drive_dist(clicks);
-        //Serial.println(result);
-      }
-      serial_clear(Serial);
-      digitalWrite(led_pin,0);
-    }
+    // if (Serial.available()) {
+    //   digitalWrite(led_pin,1);
+    //   char inByte = Serial.read();
+    //   switch (inByte) {
+    //     case 'p':
+    //     //test ping
+    //     Serial.println(inByte);
+    //     //ping slave;
+    //     Serial.println("Running Ping");
+    //     //ping slave 0
+    //     Serial.println("Pinging slave 0:");
+    //     result =  ping_slave(0, 11111);
+    //     Serial.println(result);
+    //     //ping slave 1
+    //     Serial.println("Pinging slave 1:");
+    //     result =  ping_slave(1, 22222);
+    //     Serial.println(result);
+    //     case 'd':
+    //     //test drive_to
+    //     Serial.println("Running drive_dist");
+    //     //int clicks[2] = {100,100};
+    //     //result = drive_dist(clicks);
+    //     //Serial.println(result);
+    //   }
+    //   serial_clear(Serial);
+    //   digitalWrite(led_pin,0);
+    // }
 
     delay(50);
 
