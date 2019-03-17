@@ -12,12 +12,12 @@
 void test();
 void init_Comm();
 
-int ping_slave(int slave, int message);
-int drive_dist( int clicks[] );
-int drive_to( int clicks[] );
-int drive_dist_max();
+int ping_slave(int slave, int ping);
 int home();
-int set_pid_state();
-int get_node_positions();
+int set_pid_state(bool state);
+int get_position(int motor_count[]);
+int drive_dist(int distance[]);
+int drive_dist_max(int distance[]);
+int drive_to(int distance[]);
 
 #endif

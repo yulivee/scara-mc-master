@@ -23,9 +23,19 @@ scara_master::AxisClicks click_msg;
 scara_master::AxisClicks position_msg;
 std_msgs::Int16 position;
 
+// ================================= Variables ==============================
+bool pid_state = false;
+
 // ================================= ROS Functions =================================
 
 // callback functions for Ros Subscribers
+void HomeCb ( const std_msgs::Empty& toggle_msg ) {
+    home();
+}
+void SetPidStateCb ( const std_msgs::Empty& toggle_msg ) {
+  pid_state = !pid_state;
+  set_pid_state(pid_state);
+}
 void DriveDistCb ( const scara_master::AxisClicks& clicks ) {
     int data[7];
     data[0] = clicks.zAxis;
@@ -35,7 +45,7 @@ void DriveDistCb ( const scara_master::AxisClicks& clicks ) {
     data[4] = clicks.SKE;
     data[5] = clicks.SKF;
     data[6] = clicks.SKG;
-    drive_dist(data);
+    drive_dist_max(data);
 }
 void DriveToCb ( const scara_master::AxisClicks& clicks ) {
     int data[7];
@@ -47,12 +57,6 @@ void DriveToCb ( const scara_master::AxisClicks& clicks ) {
     data[5] = clicks.SKF;
     data[6] = clicks.SKG;
     drive_to(data);
-}
-void HomeCb ( const std_msgs::Empty& toggle_msg ) {
-    home();
-}
-void SetPidStateCb ( const std_msgs::Empty& toggle_msg ) {
-    set_pid_state();
 }
 
 // define ROS publishers
@@ -68,19 +72,15 @@ ros::Subscriber<std_msgs::Empty> SetPidState(PID_STATE_TOPIC, &SetPidStateCb );
 // =================================================================================
 
 void setup() {
-    // initialize both serial ports:
-    Serial.begin(9600);
-    Serial1.begin(9600);
 
     // Daniels test code starts here, must run before any ROS code! Comment out
-    init_Comm();
+    //init_Comm();
     //test();
     //Test function contains an infinite while-loop, if not commented out code will not prograss past this point!
     // Daniels test code ends here
 
-    //send hug to working buddy
-
     //Initialise Ros Node, publisher and subsribers
+    Serial.begin(9600);    // initialize serial port
     nh.initNode();
     nh.advertise(GetPosition);
     nh.subscribe(DriveTo);
@@ -90,6 +90,10 @@ void setup() {
 
     //Set baud rate for Ros serial communication
     nh.getHardware()->setBaud(57600);
+
+    //initialise communication to slaves (uses Serial1)
+    init_Comm();
+    set_pid_state(false);
 }
 
 void loop() {
@@ -98,20 +102,20 @@ void loop() {
         nh.spinOnce();
     }
 
+    int motor_count[7];
+    // ACHTUNG! darf nicht durch andere befehle unterbrochen werden!
+    // Wann werden die ROS CB Befehle ausgeführt? sind das wie Interrupts?
+    get_position(motor_count);
+    // publish clicks to Ros
+    position_msg.zAxis = motor_count[0];
+    position_msg.Shoulder = motor_count[1];
+    position_msg.UAE = motor_count[2];
+    position_msg.UAJ = motor_count[3];
+    position_msg.SKE = motor_count[4];
+    position_msg.SKF = motor_count[5];
+    position_msg.SKG = motor_count[6];
 
-    //publish clicks to Ros
-    position_msg.zAxis = 1;
-    position_msg.Shoulder = 2;
-    position_msg.UAE = 3;
-    position_msg.UAJ = 4;
-    position_msg.SKE = 5;
-    position_msg.SKF = 6;
-    position_msg.SKG = 7;
-
-// click_msg.data = get_node_positions();
     GetPosition.publish( &position_msg );
-    //position.data = 42;
-    //GetPosition.publish( &position );
 
     //cyclical communication with Ros Master
     nh.spinOnce();
