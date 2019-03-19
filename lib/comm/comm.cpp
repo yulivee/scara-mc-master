@@ -61,6 +61,7 @@ void serial_clear(HardwareSerial &S1){
 
 //start a command transmission on serial bus by setting ss pin and doing handshake
 int start_transmission(HardwareSerial &S1, int slave){
+  digitalWrite(led_pin,1);
   serial_clear(S1);
   digitalWrite(ss_pin[slave],1); // enable slave to use bus
   int ready_msg = serial_read_int(S1); // wait for ready message
@@ -74,6 +75,7 @@ int start_transmission(HardwareSerial &S1, int slave){
 //end command transmission by resetting ss pin
 void end_transmission(int slave){
   digitalWrite(ss_pin[slave],0);
+  digitalWrite(led_pin,0);
 }
 
 // // send a command to slaves (deprecated and untested)
@@ -112,15 +114,15 @@ void init_Comm(){
 // Command: ping
 // Description: Sends data to slaves, that each slave echoes back
 int ping_slave(int ping, int echo[SLAVE_COUNT]){
-  //error handling not implemented!
+  int e=no_error;//error handling
   for (int slave = 0; slave < SLAVE_COUNT; slave++) { //send command to each slave
-    start_transmission(Serial1,slave);   //Set slave select
+    e=start_transmission(Serial1,slave);   //Set slave select
     serial_write_int(Serial1,c_ping);   //Send command
     serial_write_int(Serial1, ping);   //Send data
     echo[slave] = serial_read_int(Serial1); //Receive data
     end_transmission(slave);  //Release slave select
   }
-  return no_error;
+  return e;
 }
 
 // Command: home
@@ -208,25 +210,37 @@ int drive_to(int position[SLAVE_COUNT]){
 void test(){//HardwareSerial &Serial, HardwareSerial &Serial1) {
   init_Comm();
   Serial.begin(9600);
+  int command = 997;
+  int data = 998;
 
   while (true) {
+    serial_clear(Serial);
     Serial.println("Please enter the function you want to test using this format:");
     Serial.println("command_code, command_data");
     Serial.println("for testing the same data is sent to all slaves");
 
+    while (Serial.available() == 0) {
+      delay(50);
+    }
     // look for the next valid integer in the incoming serial stream:
-    int command = Serial.parseInt();
-    int data = Serial.parseInt();
+    command = Serial.parseInt();
+    data = Serial.parseInt();
 
     // look for the newline. That's the end of the input:
     while (Serial.read() != '\n') {
       delay(50);
     }
 
-    Serial.println("Command: " + command);
-    Serial.println("data: " + data);
+    Serial.print("Command: ");
+    Serial.println(command);
+    Serial.print("Data: ");
+    Serial.println(data);
+
 
     Serial.println("Press 'y' to send command, press any key to cancel");
+    while (Serial.available() == 0) {
+      delay(50);
+    }
     if (Serial.read() == 'y') {
       //generate data array
       int data_array[SLAVE_COUNT];
@@ -235,23 +249,40 @@ void test(){//HardwareSerial &Serial, HardwareSerial &Serial1) {
         data_array[i] = data;
       }
       int result_array[SLAVE_COUNT];
+      for (int i = 0; i < SLAVE_COUNT ; i++){
+        result_array[i] = 999;
+      }
       int error_code=0;
 
       //select with command to run
       switch (command) {
-        case 0: error_code=ping_slave(data, result_array);
+        case 0:
+        Serial.println("ping_slave");
+        error_code=ping_slave(data, result_array);
         break;
-        case 1: error_code=home();
+        case 1:
+        Serial.println("home");
+        error_code=home();
         break;
-        case 5: error_code=set_pid_state((bool) data);
+        case 5:
+        Serial.println("set_pid_state");
+        error_code=set_pid_state((bool) data);
         break;
-        case 6: error_code=get_position(result_array);
+        case 6:
+        Serial.println("get_position");
+        error_code=get_position(result_array);
         break;
-        case 10: error_code=drive_dist(data_array);
+        case 10:
+        Serial.println("drive_dist");
+        error_code=drive_dist(data_array);
         break;
-        case 11: error_code=drive_dist_max(data_array);
+        case 11:
+        Serial.println("drive_dist_max");
+        error_code=drive_dist_max(data_array);
         break;
-        case 12: error_code=drive_to(data_array);
+        case 12:
+        Serial.println("drive_to");
+        error_code=drive_to(data_array);
         break;
         default:
         error_code=9999;
@@ -259,20 +290,23 @@ void test(){//HardwareSerial &Serial, HardwareSerial &Serial1) {
       if (error_code==0) {
         Serial.println("Command completed with no errors");
       } else {
-        Serial.println("Command returned error: " + error_code);
+        Serial.print("Command returned error: " );
+        Serial.println(error_code);
       }
 
-      Serial.print("Data Array: ");
+      Serial.print("Data Array: [");
       for (int i = 0; i < SLAVE_COUNT ; i++){
-        Serial.print(data_array[i] + ", ");
+        Serial.print(data_array[i]);
+        Serial.print(" ");
       }
-      Serial.println("");
+      Serial.println("]");
 
-      Serial.print("Result Array: ");
+      Serial.print("Result Array: [");
       for (int i = 0; i < SLAVE_COUNT ; i++){
-        Serial.print(result_array[i] + ", ");
+        Serial.print(result_array[i]);
+        Serial.print(" ");
       }
-      Serial.println("");
+      Serial.println("]");
     }
     delay(50);
   }
