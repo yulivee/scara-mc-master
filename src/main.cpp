@@ -74,8 +74,7 @@ ros::Subscriber<std_msgs::Empty> SetPidState(PID_STATE_TOPIC, &SetPidStateCb );
 void setup() {
 
     // Daniels test code starts here, must run before any ROS code! Comment out
-    //init_Comm();
-    //test();
+    test();
     //Test function contains an infinite while-loop, if not commented out code will not prograss past this point!
     // Daniels test code ends here
 
