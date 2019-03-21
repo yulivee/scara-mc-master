@@ -21,6 +21,7 @@ enum Command {
   c_home = 1,
   c_set_pid_state = 5,
   c_get_position = 6,
+  c_get_target = 7,
   c_drive_dist = 10,
   c_drive_dist_max = 11,
   c_drive_to = 12
@@ -164,6 +165,19 @@ int get_position(int motor_count[SLAVE_COUNT]){ //send command to each slave
   return no_error;
 }
 
+// Command:get_target
+// Description: request current target from slaves (debug function)
+int get_target(int target[SLAVE_COUNT]){ //send command to each slave
+  int e=no_error;//error handling
+  for (int slave = 0; slave < SLAVE_COUNT; slave++) {
+    e=start_transmission(Serial1,slave);   //Set slave select
+    serial_write_int(Serial1,c_get_target);   //Send command
+    target[slave] = serial_read_int(Serial1); //Receive data
+    end_transmission(slave);  //Release slave select
+  }
+  return e;
+}
+
 // Command:drive_dist
 // Description: Change target position by distance
 int drive_dist(int distance[SLAVE_COUNT]){
@@ -216,7 +230,7 @@ void test(){//HardwareSerial &Serial, HardwareSerial &Serial1) {
   while (true) {
     serial_clear(Serial);
     Serial.println("Please enter the function you want to test using this format:");
-    Serial.println("command_code, command_data");
+    Serial.println("command_code, data, (opt.) move_direction (default +/-)");
     Serial.println("for testing the same data is sent to all slaves");
 
     while (Serial.available() == 0) {
@@ -227,7 +241,12 @@ void test(){//HardwareSerial &Serial, HardwareSerial &Serial1) {
     data = Serial.parseInt();
 
     // look for the newline. That's the end of the input:
-    while (Serial.read() != '\n') {
+    char c=Serial.read();
+    while (c != '\n') {
+      if (c == '-') {
+        data = -data;
+      }
+      c=Serial.read();
       delay(50);
     }
 
@@ -271,6 +290,10 @@ void test(){//HardwareSerial &Serial, HardwareSerial &Serial1) {
         case 6:
         Serial.println("get_position");
         error_code=get_position(result_array);
+        break;
+        case 7:
+        Serial.println("get_target");
+        error_code=get_target(result_array);
         break;
         case 10:
         Serial.println("drive_dist");
