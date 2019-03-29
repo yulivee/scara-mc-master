@@ -9,7 +9,7 @@
 //--------------------
 // VARIABLES
 //--------------------
-#define SLAVE_COUNT 2 //normally 7
+#define SLAVE_COUNT 4 //normally 7
 #define BAUD_RATE 9600
 
 const int ss_pin[7] = {22,23,24,25,26,27,28}; //Slave select lines tell slaves when they can use the bus
