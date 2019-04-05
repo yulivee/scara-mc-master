@@ -22,6 +22,7 @@ enum Command {
   c_set_pid_state = 5,
   c_get_position = 6,
   c_get_target = 7,
+  c_get_slave_num =8,
   c_drive_dist = 10,
   c_drive_dist_max = 11,
   c_drive_to = 12
@@ -66,7 +67,7 @@ int start_transmission(HardwareSerial &S1, int slave){
   serial_clear(S1);
   digitalWrite(ss_pin[slave],1); // enable slave to use bus
   int ready_msg = serial_read_int(S1); // wait for ready message
-  if ( ready_msg != slave) {   // check validity of ready message
+  if ( ready_msg != slave+1) {   // check validity of ready message
     digitalWrite(ss_pin[slave],0); // Error! disallow slave to use bus
     return e_wrong_slave;
   }
@@ -173,6 +174,19 @@ int get_target(int target[SLAVE_COUNT]){ //send command to each slave
     e=start_transmission(Serial1,slave);   //Set slave select
     serial_write_int(Serial1,c_get_target);   //Send command
     target[slave] = serial_read_int(Serial1); //Receive data
+    end_transmission(slave);  //Release slave select
+  }
+  return e;
+}
+
+// Command:c_get_slave_num
+// Description:
+int get_slave_num(int slave_numbers[SLAVE_COUNT]){ //send command to each slave
+  int e=no_error;//error handling
+  for (int slave = 0; slave < SLAVE_COUNT; slave++) {
+    e=start_transmission(Serial1,slave);   //Set slave select
+    serial_write_int(Serial1,c_get_slave_num);   //Send command
+    slave_numbers[slave] = serial_read_int(Serial1); //Receive data
     end_transmission(slave);  //Release slave select
   }
   return e;
@@ -294,6 +308,10 @@ void test(){//HardwareSerial &Serial, HardwareSerial &Serial1) {
         case 7:
         Serial.println("get_target");
         error_code=get_target(result_array);
+        break;
+        case 8:
+        Serial.println("get_slave_num");
+        error_code=get_slave_num(result_array);
         break;
         case 10:
         Serial.println("drive_dist");
