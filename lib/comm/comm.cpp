@@ -9,7 +9,7 @@
 //--------------------
 // VARIABLES
 //--------------------
-#define SLAVE_COUNT 4 //normally 7
+#define SLAVE_COUNT 6 //normally 7
 #define BAUD_RATE 9600
 
 const int ss_pin[7] = {22,23,24,25,26,27,28}; //Slave select lines tell slaves when they can use the bus
@@ -69,6 +69,7 @@ int start_transmission(HardwareSerial &S1, int slave){
   int ready_msg = serial_read_int(S1); // wait for ready message
   if ( ready_msg != slave+1) {   // check validity of ready message
     digitalWrite(ss_pin[slave],0); // Error! disallow slave to use bus
+    digitalWrite(led_pin,0);
     return e_wrong_slave;
   }
   return no_error;
@@ -80,20 +81,6 @@ void end_transmission(int slave){
   digitalWrite(led_pin,0);
 }
 
-// // send a command to slaves (deprecated and untested)
-// int send_command(HardwareSerial &S1, int command, int data[SLAVE_COUNT], int r_data[SLAVE_COUNT]){
-//   //Command is sent to each Slave
-//   int e = no_error
-//   for (int slave = 0; slave < SLAVE_COUNT; slave++) {
-//     e=start_transmission(S1,slave);   //Set slave select
-//     serial_write_int(S1,command);   //Send command
-//     serial_write_int(S1, data[slave]);   //Send data
-//     r_data[slave] = serial_read_int(S1); //Receive data
-//     end_transmission(slave);  //Release slave select
-//   }
-//   return e;
-// }
-
 //--------------------
 // EXTERNAL FUNCTIONS
 //--------------------
@@ -104,13 +91,13 @@ void init_Comm(){
   //initialise pins
   for (size_t i = 0; i < SLAVE_COUNT; i++) {
     pinMode(ss_pin[i], OUTPUT);
-  }
-  //set all pins to zero
-  for (size_t i = 0; i < SLAVE_COUNT; i++) {
     digitalWrite(ss_pin[i], 0);
   }
   //start serial communication to slaves
   Serial1.begin(BAUD_RATE);
+
+  //turn off motors
+  //set_pid_state(false);
 }
 
 // Command: ping

@@ -92,7 +92,6 @@ void setup() {
 
     //initialise communication to slaves (uses Serial1)
     init_Comm();
-    set_pid_state(false);
 }
 
 void loop() {
