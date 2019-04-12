@@ -31,8 +31,11 @@ enum Command {
 //possible errors
 enum Errortype {
   no_error = 0,
-  e_wrong_slave = 1,
-  e_ping_bad_echo = 2
+  e_wrong_slave = 91,
+  e_ping_bad_echo = 92,
+  e_unknown_command = 93,
+  e_bad_data = 94,
+  default_value = 99
 };
 
 //--------------------
@@ -70,6 +73,7 @@ int start_transmission(HardwareSerial &S1, int slave){
   if ( ready_msg != slave+1) {   // check validity of ready message
     digitalWrite(ss_pin[slave],0); // Error! disallow slave to use bus
     digitalWrite(led_pin,0);
+    // TODO reset all slaves
     return e_wrong_slave;
   }
   return no_error;
@@ -116,11 +120,12 @@ int ping_slave(int ping, int echo[SLAVE_COUNT]){
 
 // Command: home
 // Description: Set current position to zero
-int home(){
+int home(int error_code[SLAVE_COUNT]){
   //error handling not implemented!
   for (int slave = 0; slave < SLAVE_COUNT; slave++) { //send command to each slave
     start_transmission(Serial1,slave);   //Set slave select
     serial_write_int(Serial1,c_home);   //Send command
+    error_code[slave] = serial_read_int(Serial1); //Receive data
     end_transmission(slave);  //Release slave select
   }
   return no_error;
@@ -128,13 +133,14 @@ int home(){
 
 // Command:set_pid_state
 // Description: Set PID of all slaves to ON or OFF
-int set_pid_state(bool state){ //send command to each slave
+int set_pid_state(bool state, int error_code[SLAVE_COUNT]){ //send command to each slave
   //error handling not implemented!
   int i_state = (int)state;
   for (int slave = 0; slave < SLAVE_COUNT; slave++) {
     start_transmission(Serial1,slave);   //Set slave select
     serial_write_int(Serial1,c_set_pid_state);   //Send command
     serial_write_int(Serial1, i_state);   //Send data
+    error_code[slave] = serial_read_int(Serial1); //Receive data
     end_transmission(slave);  //Release slave select
   }
   return no_error;
@@ -181,12 +187,13 @@ int get_slave_num(int slave_numbers[SLAVE_COUNT]){ //send command to each slave
 
 // Command:drive_dist
 // Description: Change target position by distance
-int drive_dist(int distance[SLAVE_COUNT]){
+int drive_dist(int distance[SLAVE_COUNT], int new_target[SLAVE_COUNT]){
   //error handling not implemented!
   for (int slave = 0; slave < SLAVE_COUNT; slave++) { //send command to each slave
     start_transmission(Serial1,slave);   //Set slave select
     serial_write_int(Serial1,c_drive_dist);   //Send command
     serial_write_int(Serial1, distance[slave]);   //Send data
+    new_target[slave] = serial_read_int(Serial1); //Receive data
     end_transmission(slave);  //Release slave select
   }
   return no_error;
@@ -194,12 +201,13 @@ int drive_dist(int distance[SLAVE_COUNT]){
 
 // Command: drive_dist_max
 // Description: Move joint by distance from current position
-int drive_dist_max(int distance[SLAVE_COUNT]){
+int drive_dist_max(int distance[SLAVE_COUNT], int new_target[SLAVE_COUNT]){
   //error handling not implemented!
   for (int slave = 0; slave < SLAVE_COUNT; slave++) { //send command to each slave
     start_transmission(Serial1,slave);   //Set slave select
     serial_write_int(Serial1,c_drive_dist_max);   //Send command
     serial_write_int(Serial1, distance[slave]);   //Send data
+    new_target[slave] = serial_read_int(Serial1); //Receive data
     end_transmission(slave);  //Release slave select
   }
   return no_error;
@@ -207,12 +215,13 @@ int drive_dist_max(int distance[SLAVE_COUNT]){
 
 // Command: drive_to
 // Description: Move joint to position
-int drive_to(int position[SLAVE_COUNT]){
+int drive_to(int position[SLAVE_COUNT], int new_target[SLAVE_COUNT]){
   //error handling not implemented!
   for (int slave = 0; slave < SLAVE_COUNT; slave++) { //send command to each slave
     start_transmission(Serial1,slave);   //Set slave select
     serial_write_int(Serial1,c_drive_to);   //Send command
     serial_write_int(Serial1, position[slave]);   //Send data
+    new_target[slave] = serial_read_int(Serial1); //Receive data
     end_transmission(slave);  //Release slave select
   }
   return no_error;
@@ -282,11 +291,11 @@ void test(){//HardwareSerial &Serial, HardwareSerial &Serial1) {
         break;
         case 1:
         Serial.println("home");
-        error_code=home();
+        error_code=home(result_array);
         break;
         case 5:
         Serial.println("set_pid_state");
-        error_code=set_pid_state((bool) data);
+        error_code=set_pid_state((bool) data, result_array);
         break;
         case 6:
         Serial.println("get_position");
@@ -302,15 +311,15 @@ void test(){//HardwareSerial &Serial, HardwareSerial &Serial1) {
         break;
         case 10:
         Serial.println("drive_dist");
-        error_code=drive_dist(data_array);
+        error_code=drive_dist(data_array, result_array);
         break;
         case 11:
         Serial.println("drive_dist_max");
-        error_code=drive_dist_max(data_array);
+        error_code=drive_dist_max(data_array, result_array);
         break;
         case 12:
         Serial.println("drive_to");
-        error_code=drive_to(data_array);
+        error_code=drive_to(data_array, result_array);
         break;
         default:
         error_code=9999;

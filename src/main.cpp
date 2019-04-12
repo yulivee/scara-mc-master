@@ -30,11 +30,11 @@ bool pid_state = false;
 
 // callback functions for Ros Subscribers
 void HomeCb ( const std_msgs::Empty& toggle_msg ) {
-    home();
+    //home();
 }
 void SetPidStateCb ( const std_msgs::Empty& toggle_msg ) {
   pid_state = !pid_state;
-  set_pid_state(pid_state);
+  //set_pid_state(pid_state);
 }
 void DriveDistCb ( const scara_master::AxisClicks& clicks ) {
     int data[7];
@@ -45,7 +45,7 @@ void DriveDistCb ( const scara_master::AxisClicks& clicks ) {
     data[4] = clicks.SKE;
     data[5] = clicks.SKF;
     data[6] = clicks.SKG;
-    drive_dist_max(data);
+    //drive_dist_max(data);
 }
 void DriveToCb ( const scara_master::AxisClicks& clicks ) {
     int data[7];
@@ -56,7 +56,7 @@ void DriveToCb ( const scara_master::AxisClicks& clicks ) {
     data[4] = clicks.SKE;
     data[5] = clicks.SKF;
     data[6] = clicks.SKG;
-    drive_to(data);
+    //drive_to(data);
 }
 
 // define ROS publishers
@@ -77,7 +77,6 @@ void setup() {
     test();
     //Test function contains an infinite while-loop, if not commented out code will not prograss past this point!
     // Daniels test code ends here
-
     //Initialise Ros Node, publisher and subsribers
     Serial.begin(9600);    // initialize serial port
     nh.initNode();
