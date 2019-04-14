@@ -19,13 +19,16 @@ const int led_pin = 13; //Pin of onborad LED
 enum Command {
   c_ping = 0,
   c_home = 1,
-  c_set_pid_state = 5,
+  c_set_pid_state = 2,
   c_get_position = 6,
   c_get_target = 7,
   c_get_slave_num =8,
   c_drive_dist = 10,
   c_drive_dist_max = 11,
-  c_drive_to = 12
+  c_drive_to = 12,
+  c_set_speed = 15,
+  c_set_zone = 16,
+  c_check_target_reached = 20
 };
 
 //possible errors
@@ -234,118 +237,68 @@ int drive_to(int position[SLAVE_COUNT]){
   return r;
 }
 
-void test_single_slave(int akt_slave) {
-  while (true) {
-    serial_clear(Serial);
-    Serial.println("Please enter the function you want to test using this format:");
-    Serial.println("command_code, data, (opt.) move_direction (default +/-)");
-    //Serial.println("for testing the same data is sent to all slaves");
+//Command: set_speed
+//TODO
 
-    while (Serial.available() == 0) {
-      delay(50);
-    }
-    // look for the next valid integer in the incoming serial stream:
-    int command = Serial.parseInt();
-    int data = Serial.parseInt();
-
-    // look for the newline. That's the end of the input:
-    char c=Serial.read();
-    while (c != '\n') {
-      if (c == '-') {
-        data = -data;
-      }
-      c=Serial.read();
-      delay(50);
-    }
-
-    Serial.print("Command: ");
-    Serial.println(command);
-    Serial.print("Data: ");
-    Serial.println(data);
-
-    //generate data array
-    int data_array[SLAVE_COUNT];
-    // initializing array elements
-    for (int i = 0; i < SLAVE_COUNT ; i++){
-      data_array[i] = 0;
-    }
-    data_array[akt_slave]=data;
-    int result_array[SLAVE_COUNT];
-    for (int i = 0; i < SLAVE_COUNT ; i++){
-      result_array[i] = default_value+2;
-    }
-    int error_code=0;
-
-    //select with command to run
-    switch (command) {
-      case 0:
-      Serial.println("ping_slave");
-      error_code=ping_slave(data);
-      break;
-      case 1:
-      Serial.println("home");
-      error_code=home();
-      break;
-      case 5:
-      Serial.println("set_pid_state");
-      error_code=set_pid_state((bool) data);
-      break;
-      case 6:
-      Serial.println("get_position");
-      error_code=get_position(result_array);
-      break;
-      case 7:
-      Serial.println("get_target");
-      error_code=get_target(result_array);
-      break;
-      case 8:
-      Serial.println("get_slave_num");
-      error_code=get_slave_num(result_array);
-      break;
-      case 10:
-      Serial.println("drive_dist");
-      error_code=drive_dist(data_array);
-      break;
-      case 11:
-      Serial.println("drive_dist_max");
-      error_code=drive_dist_max(data_array);
-      break;
-      case 12:
-      Serial.println("drive_to");
-      error_code=drive_to(data_array);
-      break;
-      default:
-      error_code=e_unknown_command;
-    }
-    if (error_code==no_error) {
-      Serial.println("Command completed with no errors");
-    } else {
-      Serial.print("Command returned error: " );
-      Serial.println(error_code);
-    }
-
-    Serial.print("Data Array: [");
-    for (int i = 0; i < SLAVE_COUNT ; i++){
-      Serial.print(data_array[i]);
-      Serial.print(" ");
-    }
-    Serial.println("]");
-
-    Serial.print("Result Array: [");
-    for (int i = 0; i < SLAVE_COUNT ; i++){
-      Serial.print(result_array[i]);
-      Serial.print(" ");
-    }
-    Serial.println("]");
-    delay(50);
+// Command: set_zone
+// Description: define distance to target when it counts as "reached"
+int set_zone(int zone){
+  int r=no_error; //return variable
+  for (int slave = 0; slave < SLAVE_COUNT; slave++) { //send command to each slave
+    r=start_transmission(Serial1,slave);   //Set slave select
+    serial_write_int(Serial1,c_set_zone);   //Send command
+    serial_write_int(Serial1, zone);   //Send data
+    r=end_transmission(slave,c_set_zone);  //Release slave select
   }
+  return r;
 }
 
-void test_all_slaves(){
-  while (true) {
+// Command: check_target_reached
+// Description: Check if Slaves have reached target position (target within zone)
+int check_target_reached(int state[SLAVE_COUNT]){
+  int r=no_error; //return variable
+  for (int slave = 0; slave < SLAVE_COUNT; slave++) { //send command to each slave
+    r=start_transmission(Serial1,slave);   //Set slave select
+    serial_write_int(Serial1,c_check_target_reached);   //Send command
+    state[slave] = serial_read_int(Serial1); //Receive data
+    r=end_transmission(slave,c_check_target_reached);  //Release slave select
+  }
+  return r;
+}
+
+//==============================================
+//TEST Functions
+//==============================================
+
+
+//--------------------------
+// Test Function
+// from https://www.arduino.cc/en/Tutorial/ReadASCIIString
+//--------------------------
+void test(){//HardwareSerial &Serial, HardwareSerial &Serial1) {
+  init_Comm();
+  Serial.begin(9600);
+
+  Serial.println("Please enter the slave number you wish to sent data to or enter 'a' for all (use 999,0 to reset)");
+  while (Serial.available() == 0) { // wait for user input
+    delay(50);
+  }
+
+  //set running mode (single slave or all)
+  char s_input = Serial.read();
+  int akt_slave = default_value;
+  if ('0'<s_input && s_input<'8') {
+    akt_slave=s_input-49;
+    Serial.print("Slave ");
+    Serial.print(akt_slave+1);
+    Serial.println(" selected");
+  }
+
+  bool b=true;
+  while (b) {
     serial_clear(Serial);
     Serial.println("Please enter the function you want to test using this format:");
-    Serial.println("command_code, data, (opt.) move_direction (default +/-)");
+    Serial.println("command, data, (opt.) move_direction (default +)");
     //Serial.println("for testing the same data is sent to all slaves");
 
     while (Serial.available() == 0) {
@@ -376,6 +329,15 @@ void test_all_slaves(){
     for (int i = 0; i < SLAVE_COUNT ; i++){
       data_array[i] = data;
     }
+
+    //if running single slave mode
+    if (0<=akt_slave && akt_slave<7) {
+      for (int i = 0; i < SLAVE_COUNT ; i++){
+        data_array[i] = 0;
+      }
+      data_array[akt_slave]=data;
+    }
+
     int result_array[SLAVE_COUNT];
     for (int i = 0; i < SLAVE_COUNT ; i++){
       result_array[i] = default_value+2;
@@ -384,41 +346,53 @@ void test_all_slaves(){
 
     //select with command to run
     switch (command) {
-      case 0:
+      case c_ping:
       Serial.println("ping_slave");
       error_code=ping_slave(data);
       break;
-      case 1:
+      case c_home:
       Serial.println("home");
       error_code=home();
       break;
-      case 5:
+      case c_set_pid_state:
       Serial.println("set_pid_state");
       error_code=set_pid_state((bool) data);
       break;
-      case 6:
+      case c_get_position:
       Serial.println("get_position");
       error_code=get_position(result_array);
       break;
-      case 7:
+      case c_get_target:
       Serial.println("get_target");
       error_code=get_target(result_array);
       break;
-      case 8:
+      case c_get_slave_num:
       Serial.println("get_slave_num");
       error_code=get_slave_num(result_array);
       break;
-      case 10:
+      case c_drive_dist:
       Serial.println("drive_dist");
       error_code=drive_dist(data_array);
       break;
-      case 11:
+      case c_drive_dist_max:
       Serial.println("drive_dist_max");
       error_code=drive_dist_max(data_array);
       break;
-      case 12:
+      case c_drive_to:
       Serial.println("drive_to");
       error_code=drive_to(data_array);
+      break;
+      //set speed goes here
+      case c_set_zone:
+      Serial.println("set_zone");
+      error_code=set_zone(data);
+      break;
+      case c_check_target_reached:
+      Serial.println("check_target_reached");
+      error_code=check_target_reached(result_array);
+      break;
+      case 999:
+      b=false;
       break;
       default:
       error_code=e_unknown_command;
@@ -443,33 +417,7 @@ void test_all_slaves(){
       Serial.print(" ");
     }
     Serial.println("]");
+    Serial.println(" ");
     delay(50);
-  }
-}
-
-//--------------------------
-// Test Function
-// from https://www.arduino.cc/en/Tutorial/ReadASCIIString
-//--------------------------
-void test(){//HardwareSerial &Serial, HardwareSerial &Serial1) {
-  init_Comm();
-  Serial.begin(9600);
-
-  Serial.println("Please enter the slave number you wish to sent data to or enter 'a' for all");
-  while (Serial.available() == 0) {
-    delay(50);
-  }
-  // look for the next valid integer in the incoming serial stream:
-  char s_input = Serial.read();
-  int akt_slave;
-  if ('0'<s_input && s_input<'8') {
-    akt_slave=s_input-49;
-    Serial.print("Slave ");
-    Serial.print(akt_slave+1);
-    Serial.println(" selected");
-    test_single_slave(akt_slave);
-  }
-  if (s_input == 'a') {
-    test_all_slaves();
   }
 }
