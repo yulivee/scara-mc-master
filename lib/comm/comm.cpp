@@ -9,7 +9,7 @@
 //--------------------
 // VARIABLES
 //--------------------
-#define SLAVE_COUNT 6 //normally 7
+#define SLAVE_COUNT 1 //normally 7
 #define BAUD_RATE 9600
 
 const int ss_pin[7] = {22,23,24,25,26,27,28}; //Slave select lines tell slaves when they can use the bus
@@ -31,15 +31,16 @@ enum Command {
   c_check_target_reached = 20
 };
 
-//possible errors
+//error handling
+byte slave_error[SLAVE_COUNT];
+byte master_error[SLAVE_COUNT];
 enum Errortype {
   no_error = 0,
-  command_offs =100,
-  e_wrong_slave = 910,
-  e_ping_bad_echo = 920,
-  e_unknown_command = 930,
-  e_bad_data = 940,
-  default_value = 990
+  e_wrong_slave = 91,
+  e_ping_bad_echo = 92,
+  e_unknown_command = 93,
+  e_bad_data = 94,
+  default_value = 99
 };
 
 //--------------------
@@ -69,32 +70,28 @@ void serial_clear(HardwareSerial &S1){
 }
 
 //start a command transmission on serial bus by setting ss pin and doing handshake
-int start_transmission(HardwareSerial &S1, int slave){
-  digitalWrite(led_pin,1);
+void start_transmission(HardwareSerial &S1, int slave){
+  digitalWrite(led_pin,true);
   serial_clear(S1);
-  digitalWrite(ss_pin[slave],1); // enable slave to use bus
+  digitalWrite(ss_pin[slave],true); // enable slave to use bus
   int ready_msg = serial_read_int(S1); // wait for ready message
+  //DEBUG:   Serial.println(ready_msg);
   if ( ready_msg != slave+1) {   // check validity of ready message
-    digitalWrite(ss_pin[slave],0); // Error! disallow slave to use bus
-    digitalWrite(led_pin,0);
-    // TODO reset all slaves
-    return e_wrong_slave+slave+1;
+    digitalWrite(ss_pin[slave],false); // Error! disallow slave to use bus
+    digitalWrite(led_pin,false);
+    master_error[slave]=e_wrong_slave;
   }
-  return no_error;
 }
 
 //end command transmission by resetting ss pin
-int end_transmission(int slave, int command){
-  //error handling
-  int r=no_error;
-  int error_code = serial_read_int(Serial1); //Receive data
-  if (error_code != (command_offs+(10*command))) {
-    r=error_code+slave+1;
-  }
+void end_transmission(HardwareSerial &S1, int slave, int command){
   //reset bus
-  digitalWrite(ss_pin[slave],0);
-  digitalWrite(led_pin,0);
-  return r;
+  digitalWrite(ss_pin[slave],false);
+  int error_code = serial_read_int(S1); //Receive data
+  if (error_code != command) {
+    slave_error[slave]=error_code;
+  }
+  digitalWrite(led_pin,false);
 }
 
 //--------------------
@@ -105,7 +102,7 @@ int end_transmission(int slave, int command){
 // Description: Initialise all pins and the Serial bus needed for the communication library
 void init_Comm(){
   //initialise pins
-  for (size_t i = 0; i < SLAVE_COUNT; i++) {
+  for (size_t i = 0; i < 7; i++) {
     pinMode(ss_pin[i], OUTPUT);
     digitalWrite(ss_pin[i], 0);
   }
@@ -118,152 +115,135 @@ void init_Comm(){
 
 // Command: ping
 // Description: Sends data to slaves, that each slave echoes back
-int ping_slave(int ping){
-  int r=no_error; //return variable
+void ping_slave(int ping, int echo[SLAVE_COUNT]){
   for (int slave = 0; slave < SLAVE_COUNT; slave++) { //send command to each slave
-    r=start_transmission(Serial1,slave);   //Set slave select
+    start_transmission(Serial1,slave);   //Set slave select
     serial_write_int(Serial1,c_ping);   //Send command
     serial_write_int(Serial1, ping);   //Send data
-    int echo = serial_read_int(Serial1); //Receive data
-    r= end_transmission(slave, c_ping);  //Release slave select
-    if (echo != ping) {
-      r=e_ping_bad_echo+slave+1;
-    }
+    echo[slave] = serial_read_int(Serial1); //Receive data
+    end_transmission(Serial1, slave, c_ping);  //Release slave select
   }
-  return r;
 }
 
 // Command: home
 // Description: Set current position to zero
-int home(){
-  int r=no_error; //return variable
+void home(){
   for (int slave = 0; slave < SLAVE_COUNT; slave++) { //send command to each slave
-    r=start_transmission(Serial1,slave);   //Set slave select
+    start_transmission(Serial1,slave);   //Set slave select
     serial_write_int(Serial1,c_home);   //Send command
-    r=end_transmission(slave,c_home);  //Release slave select
+    end_transmission(Serial1, slave,c_home);  //Release slave select
   }
-  return r;
 }
 
 // Command:set_pid_state
 // Description: Set PID of all slaves to ON or OFF
-int set_pid_state(bool state){ //send command to each slave
-  int r=no_error; //return variable
+void set_pid_state(bool state){ //send command to each slave
   int i_state = (int)state;
   for (int slave = 0; slave < SLAVE_COUNT; slave++) {
-    r=start_transmission(Serial1,slave);   //Set slave select
+    start_transmission(Serial1,slave);   //Set slave select
     serial_write_int(Serial1,c_set_pid_state);   //Send command
     serial_write_int(Serial1, i_state);   //Send data
-    r=end_transmission(slave,c_set_pid_state);  //Release slave select
+    end_transmission(Serial1, slave,c_set_pid_state);  //Release slave select
   }
-  return r;
 }
 
 // Command:get_position
 // Description: request current position from slaves
-int get_position(int motor_count[SLAVE_COUNT]){ //send command to each slave
-  int r=no_error; //return variable
+void get_position(int motor_count[SLAVE_COUNT]){ //send command to each slave
   for (int slave = 0; slave < SLAVE_COUNT; slave++) {
-    r=start_transmission(Serial1,slave);   //Set slave select
+    start_transmission(Serial1,slave);   //Set slave select
     serial_write_int(Serial1,c_get_position);   //Send command
     motor_count[slave] = serial_read_int(Serial1); //Receive data
-    r=end_transmission(slave,c_get_position);  //Release slave select
+    end_transmission(Serial1, slave,c_get_position);  //Release slave select
   }
-  return r;
 }
 
 // Command:get_target
 // Description: request current target from slaves (debug function)
-int get_target(int target[SLAVE_COUNT]){ //send command to each slave
-  int r=no_error; //return variable
+void get_target(int target[SLAVE_COUNT]){ //send command to each slave
   for (int slave = 0; slave < SLAVE_COUNT; slave++) {
-    r=start_transmission(Serial1,slave);   //Set slave select
+    start_transmission(Serial1,slave);   //Set slave select
     serial_write_int(Serial1,c_get_target);   //Send command
     target[slave] = serial_read_int(Serial1); //Receive data
-    r=end_transmission(slave,c_get_target);  //Release slave select
+    end_transmission(Serial1, slave,c_get_target);  //Release slave select
   }
-  return r;
 }
 
 // Command:c_get_slave_num
 // Description:
-int get_slave_num(int slave_numbers[SLAVE_COUNT]){ //send command to each slave
-  int r=no_error;//error handling
+void get_slave_num(int slave_numbers[SLAVE_COUNT]){ //send command to each slave
   for (int slave = 0; slave < SLAVE_COUNT; slave++) {
-    r=start_transmission(Serial1,slave);   //Set slave select
+    start_transmission(Serial1,slave);   //Set slave select
     serial_write_int(Serial1,c_get_slave_num);   //Send command
     slave_numbers[slave] = serial_read_int(Serial1); //Receive data
-    r=end_transmission(slave,c_get_slave_num);  //Release slave select
+    end_transmission(Serial1, slave,c_get_slave_num);  //Release slave select
   }
-  return r;
 }
 
 // Command:drive_dist
 // Description: Change target position by distance
-int drive_dist(int distance[SLAVE_COUNT]){
-  int r=no_error; //return variable
+void drive_dist(int distance[SLAVE_COUNT]){
   for (int slave = 0; slave < SLAVE_COUNT; slave++) { //send command to each slave
-    r=start_transmission(Serial1,slave);   //Set slave select
+    start_transmission(Serial1,slave);   //Set slave select
     serial_write_int(Serial1,c_drive_dist);   //Send command
     serial_write_int(Serial1, distance[slave]);   //Send data
-    r=end_transmission(slave,c_drive_dist);  //Release slave select
+    end_transmission(Serial1, slave,c_drive_dist);  //Release slave select
   }
-  return r;
 }
 
 // Command: drive_dist_max
 // Description: Move joint by distance from current position
-int drive_dist_max(int distance[SLAVE_COUNT]){
-  int r=no_error; //return variable
+void drive_dist_max(int distance[SLAVE_COUNT]){
   for (int slave = 0; slave < SLAVE_COUNT; slave++) { //send command to each slave
-    r=start_transmission(Serial1,slave);   //Set slave select
+    start_transmission(Serial1,slave);   //Set slave select
     serial_write_int(Serial1,c_drive_dist_max);   //Send command
     serial_write_int(Serial1, distance[slave]);   //Send data
-    r=end_transmission(slave,c_drive_dist_max);  //Release slave select
+    end_transmission(Serial1, slave,c_drive_dist_max);  //Release slave select
   }
-  return r;
 }
 
 // Command: drive_to
 // Description: Move joint to position
-int drive_to(int position[SLAVE_COUNT]){
-  int r=no_error; //return variable
+void drive_to(int position[SLAVE_COUNT]){
   for (int slave = 0; slave < SLAVE_COUNT; slave++) { //send command to each slave
-    r=start_transmission(Serial1,slave);   //Set slave select
+    start_transmission(Serial1,slave);   //Set slave select
     serial_write_int(Serial1,c_drive_to);   //Send command
     serial_write_int(Serial1, position[slave]);   //Send data
-    r=end_transmission(slave,c_drive_to);  //Release slave select
+    end_transmission(Serial1, slave,c_drive_to);  //Release slave select
   }
-  return r;
 }
 
 //Command: set_speed
-//TODO
+// Description: define speed of the robot in percent
+void set_speed(int speed){
+  for (int slave = 0; slave < SLAVE_COUNT; slave++) { //send command to each slave
+    start_transmission(Serial1,slave);   //Set slave select
+    serial_write_int(Serial1,c_set_speed);   //Send command
+    serial_write_int(Serial1, speed);   //Send data
+    end_transmission(Serial1, slave,c_set_speed);  //Release slave select
+  }
+}
 
 // Command: set_zone
-// Description: define distance to target when it counts as "reached"
-int set_zone(int zone){
-  int r=no_error; //return variable
+// Description: define fly-by distance to target when it counts as "reached"
+void set_zone(int zone){
   for (int slave = 0; slave < SLAVE_COUNT; slave++) { //send command to each slave
-    r=start_transmission(Serial1,slave);   //Set slave select
+    start_transmission(Serial1,slave);   //Set slave select
     serial_write_int(Serial1,c_set_zone);   //Send command
     serial_write_int(Serial1, zone);   //Send data
-    r=end_transmission(slave,c_set_zone);  //Release slave select
+    end_transmission(Serial1, slave,c_set_zone);  //Release slave select
   }
-  return r;
 }
 
 // Command: check_target_reached
 // Description: Check if Slaves have reached target position (target within zone)
-int check_target_reached(int state[SLAVE_COUNT]){
-  int r=no_error; //return variable
+void check_target_reached(bool target_reached[SLAVE_COUNT]){
   for (int slave = 0; slave < SLAVE_COUNT; slave++) { //send command to each slave
-    r=start_transmission(Serial1,slave);   //Set slave select
+    start_transmission(Serial1,slave);   //Set slave select
     serial_write_int(Serial1,c_check_target_reached);   //Send command
-    state[slave] = serial_read_int(Serial1); //Receive data
-    r=end_transmission(slave,c_check_target_reached);  //Release slave select
+    target_reached[slave] = (bool) serial_read_int(Serial1); //Receive data
+    end_transmission(Serial1, slave,c_check_target_reached);  //Release slave select
   }
-  return r;
 }
 
 //==============================================
@@ -276,15 +256,19 @@ int check_target_reached(int state[SLAVE_COUNT]){
 // from https://www.arduino.cc/en/Tutorial/ReadASCIIString
 //--------------------------
 void test(){//HardwareSerial &Serial, HardwareSerial &Serial1) {
+  //SETUP
   init_Comm();
   Serial.begin(9600);
 
+  //LOOP
+  while(true){
+
+  //set running mode (single slave or all)
   Serial.println("Please enter the slave number you wish to sent data to or enter 'a' for all (use 999,0 to reset)");
   while (Serial.available() == 0) { // wait for user input
     delay(50);
   }
 
-  //set running mode (single slave or all)
   char s_input = Serial.read();
   int akt_slave = default_value;
   if ('0'<s_input && s_input<'8') {
@@ -294,12 +278,13 @@ void test(){//HardwareSerial &Serial, HardwareSerial &Serial1) {
     Serial.println(" selected");
   }
 
+  //Test Loop
   bool b=true;
   while (b) {
+    serial_clear(Serial1);
     serial_clear(Serial);
-    Serial.println("Please enter the function you want to test using this format:");
-    Serial.println("command, data, (opt.) move_direction (default +)");
-    //Serial.println("for testing the same data is sent to all slaves");
+    Serial.print("Please enter the function using this format: ");
+    Serial.println("command, data, move dir (opt., default +)");
 
     while (Serial.available() == 0) {
       delay(50);
@@ -318,14 +303,14 @@ void test(){//HardwareSerial &Serial, HardwareSerial &Serial1) {
       delay(50);
     }
 
+    //echo the entrered Command and Data
     Serial.print("Command: ");
-    Serial.println(command);
-    Serial.print("Data: ");
+    Serial.print(command);
+    Serial.print(" | Data: ");
     Serial.println(data);
 
     //generate data array
     int data_array[SLAVE_COUNT];
-    // initializing array elements
     for (int i = 0; i < SLAVE_COUNT ; i++){
       data_array[i] = data;
     }
@@ -337,73 +322,6 @@ void test(){//HardwareSerial &Serial, HardwareSerial &Serial1) {
       }
       data_array[akt_slave]=data;
     }
-
-    int result_array[SLAVE_COUNT];
-    for (int i = 0; i < SLAVE_COUNT ; i++){
-      result_array[i] = default_value+2;
-    }
-    int error_code=0;
-
-    //select with command to run
-    switch (command) {
-      case c_ping:
-      Serial.println("ping_slave");
-      error_code=ping_slave(data);
-      break;
-      case c_home:
-      Serial.println("home");
-      error_code=home();
-      break;
-      case c_set_pid_state:
-      Serial.println("set_pid_state");
-      error_code=set_pid_state((bool) data);
-      break;
-      case c_get_position:
-      Serial.println("get_position");
-      error_code=get_position(result_array);
-      break;
-      case c_get_target:
-      Serial.println("get_target");
-      error_code=get_target(result_array);
-      break;
-      case c_get_slave_num:
-      Serial.println("get_slave_num");
-      error_code=get_slave_num(result_array);
-      break;
-      case c_drive_dist:
-      Serial.println("drive_dist");
-      error_code=drive_dist(data_array);
-      break;
-      case c_drive_dist_max:
-      Serial.println("drive_dist_max");
-      error_code=drive_dist_max(data_array);
-      break;
-      case c_drive_to:
-      Serial.println("drive_to");
-      error_code=drive_to(data_array);
-      break;
-      //set speed goes here
-      case c_set_zone:
-      Serial.println("set_zone");
-      error_code=set_zone(data);
-      break;
-      case c_check_target_reached:
-      Serial.println("check_target_reached");
-      error_code=check_target_reached(result_array);
-      break;
-      case 999:
-      b=false;
-      break;
-      default:
-      error_code=e_unknown_command;
-    }
-    if (error_code==no_error) {
-      Serial.println("Command completed with no errors");
-    } else {
-      Serial.print("Command returned error: " );
-      Serial.println(error_code);
-    }
-
     Serial.print("Data Array: [");
     for (int i = 0; i < SLAVE_COUNT ; i++){
       Serial.print(data_array[i]);
@@ -411,13 +329,100 @@ void test(){//HardwareSerial &Serial, HardwareSerial &Serial1) {
     }
     Serial.println("]");
 
-    Serial.print("Result Array: [");
+    //initialise result arrays
+    int result_array[SLAVE_COUNT];
     for (int i = 0; i < SLAVE_COUNT ; i++){
-      Serial.print(result_array[i]);
-      Serial.print(" ");
+      result_array[i] = default_value;
+    }
+    bool bool_array[SLAVE_COUNT];
+    for (int i = 0; i < SLAVE_COUNT ; i++){
+      bool_array[i] = false;
+    }
+
+    //select with command to run
+    switch (command) {
+      case c_ping:
+      Serial.println("ping_slave");
+      ping_slave(data,result_array);
+      break;
+      case c_home:
+      Serial.println("home");
+      home();
+      break;
+      case c_set_pid_state:
+      Serial.println("set_pid_state");
+      set_pid_state((bool) data);
+      break;
+      case c_get_position:
+      Serial.println("get_position");
+      get_position(result_array);
+      break;
+      case c_get_target:
+      Serial.println("get_target");
+      get_target(result_array);
+      break;
+      case c_get_slave_num:
+      Serial.println("get_slave_num");
+      get_slave_num(result_array);
+      break;
+      case c_drive_dist:
+      Serial.println("drive_dist");
+      drive_dist(data_array);
+      break;
+      case c_drive_dist_max:
+      Serial.println("drive_dist_max");
+      drive_dist_max(data_array);
+      break;
+      case c_drive_to:
+      Serial.println("drive_to");
+      drive_to(data_array);
+      break;
+      case c_set_speed:
+      Serial.println("set_speed");
+      set_speed(data);
+      break;
+      case c_set_zone:
+      Serial.println("set_zone");
+      set_zone(data);
+      break;
+      case c_check_target_reached:
+      Serial.println("check_target_reached");
+      check_target_reached(bool_array);
+      break;
+      case 999:
+      b=false;
+      break;
+      default:
+      Serial.println("Error: Unknown Command");
+    }
+
+    Serial.print("Errorhandler: M[");
+      for (int i = 0; i < SLAVE_COUNT ; i++){
+        Serial.print(master_error[i]);
+        Serial.print(" ");
+      }
+      Serial.print("], S[");
+      for (int i = 0; i < SLAVE_COUNT ; i++){
+        Serial.print(slave_error[i]);
+        Serial.print(" ");
+      }
+      Serial.println("]");
+
+    Serial.print("Result Array: [");
+    if (command == c_check_target_reached) {
+      for (int i = 0; i < SLAVE_COUNT ; i++){
+        Serial.print(bool_array[i]);
+        Serial.print(" ");
+      }
+    }else{
+      for (int i = 0; i < SLAVE_COUNT ; i++){
+        Serial.print(result_array[i]);
+        Serial.print(" ");
+      }
     }
     Serial.println("]");
     Serial.println(" ");
     delay(50);
   }
+}
 }
