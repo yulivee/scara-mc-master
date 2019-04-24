@@ -9,7 +9,9 @@
 #include <scara_master/AxisClicks.h>
 #include <std_msgs/Int16.h>
 #include <std_msgs/Empty.h>
+#include <data_def.h>
 #include <comm.h>
+#include <comm_serial_direct_control.h>
 
 #define POSITION_TOPIC "GetPos"
 #define CLICK_TOPIC "WheelEncoderClicks"
@@ -74,7 +76,7 @@ ros::Subscriber<std_msgs::Empty> SetPidState(PID_STATE_TOPIC, &SetPidStateCb );
 void setup() {
 
     // Daniels test code starts here, must run before any ROS code! Comment out
-    test();
+    direct_comm_main();
     //Test function contains an infinite while-loop, if not commented out code will not prograss past this point!
     // Daniels test code ends here
     //Initialise Ros Node, publisher and subsribers
