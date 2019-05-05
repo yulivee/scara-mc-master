@@ -18,7 +18,7 @@
 void direct_comm_main(){
   //SETUP
   init_Comm(); //Initialize slave communication
-  Serial.begin(9600); //start Communication with pc
+  Serial.begin(115200); //start Communication with pc
 
   //LOOP
   while(true){
@@ -62,7 +62,7 @@ void direct_comm_main(){
     }
 
     //DEBUG echo the entrered Command and Data
-    Serial.println("");
+    Serial.print("\n");
     Serial.print("Command: ");
     Serial.print(command);
 
@@ -71,7 +71,7 @@ void direct_comm_main(){
       Serial.print(data_array[i]);
       Serial.print(" ");
     }
-    Serial.println("]");
+    Serial.print("]\n");
     //DEBUG end
 
     //initialise result arrays
@@ -139,7 +139,7 @@ void direct_comm_main(){
       Serial.print(",");
       Serial.print(master_error[i]);
     }
-    Serial.println("");
+    Serial.print("\n");
 
     //send slave error data
     Serial.print("s");
@@ -147,7 +147,7 @@ void direct_comm_main(){
       Serial.print(",");
       Serial.print(slave_error[i]);
     }
-    Serial.println("");
+    Serial.print("\n");
 
     //if necesarry send return data
     if (expect_return) {
@@ -163,7 +163,7 @@ void direct_comm_main(){
           Serial.print(result_array[i]);
         }
       }
-      Serial.println("");
+      Serial.print("\n");
     }
   }
 
