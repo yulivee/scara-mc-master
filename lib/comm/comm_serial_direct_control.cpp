@@ -13,6 +13,11 @@
 // expects a command of up to 8 characters:
 // command_number, data0, data1, data2 ... etc.
 //Commands that only expect a simgle input variable (eg. set_pid_state) use the first data element of the received array
+//
+// To use this library just put this at the start auf de setup code:
+// //Daniels test code starts here, must run before any ROS code! Comment out
+// direct_comm_main(); //Test function contains an infinite while-loop, if not commented out code will not prograss past this point!
+// //Daniels test code ends here
 //--------------------------
 
 void direct_comm_main(){
