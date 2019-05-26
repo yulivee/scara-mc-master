@@ -23,7 +23,7 @@ void drive_dist_max(int distance[]);
 void drive_to(int distance[]);
 void set_speed(int speed);
 void set_zone(int zone);
-void check_target_reached(bool target_reached[]);
+bool check_target_reached();
 
 extern byte slave_error[];
 extern byte master_error[];

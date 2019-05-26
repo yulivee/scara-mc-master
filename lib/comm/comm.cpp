@@ -82,7 +82,7 @@ void init_Comm(){
   }
   //start serial communication to slaves
   Serial1.begin(BAUD_RATE);
-
+  Serial1.setTimeout(50);
   //turn off motors
   //set_pid_state(false);
 }
@@ -211,11 +211,15 @@ void set_zone(int zone){
 
 // Command: check_target_reached
 // Description: Check if Slaves have reached target position (target within zone)
-void check_target_reached(bool target_reached[SLAVE_COUNT]){
+bool check_target_reached(){
   for (int slave = 0; slave < SLAVE_COUNT; slave++) { //send command to each slave
     start_transmission(Serial1,slave);   //Set slave select
     serial_write_int(Serial1,c_check_target_reached);   //Send command
-    target_reached[slave] = (bool) serial_read_int(Serial1); //Receive data
+    bool target_reached = (bool) serial_read_int(Serial1); //Receive data
     end_transmission(Serial1, slave,c_check_target_reached);  //Release slave select
+    if (target_reached==false) {
+      return false;
+    }
   }
+  return true;
 }
