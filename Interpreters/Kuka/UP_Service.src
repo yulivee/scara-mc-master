@@ -1,11 +1,9 @@
 &ACCESS RVO
 &REL 7
-&PARAM DISKPATH = KRC:\R1\Program\Unterprogramme
 DEF UP_Service()
   ;=================================================
   ;Unterprogramm Service
   ;Job 6
-  ;Zelle 6904_ZF_Bin-Picking
   ;
   ;=================================================
   ;FOLD Initialisierung
