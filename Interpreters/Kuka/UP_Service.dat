@@ -5,7 +5,6 @@ DEFDAT  UP_SERVICE
 ;=================================================
 ;Unterprogramm Service
 ;Job 6
-;Zelle 6904_ZF_Bin-Picking
 ;=================================================
 
 INT job
