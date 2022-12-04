@@ -1,0 +1,5 @@
+&ACCESS RVO
+DEFDAT  TestProg
+; Dies ist ein Kuka Testprogramm
+
+END

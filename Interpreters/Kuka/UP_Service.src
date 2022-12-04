@@ -1,0 +1,103 @@
+&ACCESS RVO
+&REL 7
+&PARAM DISKPATH = KRC:\R1\Program\Unterprogramme
+DEF UP_Service()
+  ;=================================================
+  ;Unterprogramm Service
+  ;Job 6
+  ;Zelle 6904_ZF_Bin-Picking
+  ;
+  ;=================================================
+  ;FOLD Initialisierung
+  job = 6
+  VZ [Job] = {b FALSE, IDX 0}
+  SRC_INIT()
+  AuftragStart()
+  ;ENDFOLD
+  TRIGGER WHEN DISTANCE= 1 DELAY= 0 DO JobNr= Job
+  
+  ;Anfahrt
+  TRIGGER WHEN DISTANCE= 1 DELAY= 0 DO PosNr= 41
+;FOLD PTP Service_VP CONT Vel=50 % PService_VP Tool[15]:Tool_Null Base[15]:base_null;%{PE}
+;FOLD Parameters ;%{h}
+;Params IlfProvider=kukaroboter.basistech.inlineforms.movement.old; Kuka.IsGlobalPoint=False; Kuka.PointName=Service_VP; Kuka.BlendingEnabled=True; Kuka.MoveDataPtpName=PService_VP; Kuka.VelocityPtp=50; Kuka.CurrentCDSetIndex=0; Kuka.MovementParameterFieldEnabled=True; IlfCommand=PTP
+;ENDFOLD
+$BWDSTART = FALSE
+PDAT_ACT = PPService_VP
+FDAT_ACT = FService_VP
+BAS(#PTP_PARAMS, 50.0)
+SET_CD_PARAMS (0)
+PTP XService_VP C_Dis
+;ENDFOLD
+  
+    ;FOLD FREIGABE_SPS
+  ;Warte auf Freigabe von SPS
+  Continue
+  WAIT_FOR_INPUT_M(eFrg[job].Ef[], TRUE)
+  ;Freigabe zyklisch abfragen
+  Continue
+  Set_CYCFLAG(eFrg[job].Ef[],M_Inbetriebnahme)
+  ;ENDFOLD
+  ;Eintritt in Stoerbereich an SPS melden
+  TRIGGER WHEN DISTANCE= 0 DELAY= 0 DO Reset_(aFrg[job].Ab[]) PRIO= -1
+  
+  ;Prozessposition
+  TRIGGER WHEN DISTANCE= 1 DELAY= 0 DO PosNr= 45
+;FOLD PTP Service_PP Vel=50 % PService_PP Tool[15]:Tool_Null Base[15]:base_null;%{PE}%R 8.5.19,%MKUKATPBASIS,%CMOVE,%VPTP,%P 1:PTP, 2:Service_PP, 3:, 5:50, 7:PService_PP, 9:0
+$BWDSTART=FALSE
+PDAT_ACT=PPService_PP
+FDAT_ACT=FService_PP
+BAS(#PTP_PARAMS,50)
+SET_CD_PARAMS( 0)
+PTP XService_PP 
+;ENDFOLD
+  
+  Handshake(aFrg[job].qEf[],eFrg[job].Ef[],eFrg[job].Pr[])
+  ;Serviceposition erreicht
+  Handshake(aFrg[job].qPr[],eFrg[job].Pr[],eFrg[job].Rf[],OhneCyc,JobEnde)
+  
+  ;Ausfahrt
+  ;Austritt aus Stoerbereich an SPS melden
+  TRIGGER WHEN DISTANCE= 1 DELAY= 0 DO SetAB(aFrg[job].Ab[]) PRIO=-1
+  
+  TRIGGER WHEN DISTANCE= 0 DELAY= 0 DO PosNr= 49
+;FOLD PTP Service_NP CONT Vel=50 % PService_NP Tool[15]:Tool_Null Base[15]:base_null;%{PE}
+;FOLD Parameters ;%{h}
+;Params IlfProvider=kukaroboter.basistech.inlineforms.movement.old; Kuka.IsGlobalPoint=False; Kuka.PointName=Service_NP; Kuka.BlendingEnabled=True; Kuka.MoveDataPtpName=PService_NP; Kuka.VelocityPtp=50; Kuka.CurrentCDSetIndex=0; Kuka.MovementParameterFieldEnabled=True; IlfCommand=PTP
+;ENDFOLD
+$BWDSTART = FALSE
+PDAT_ACT = PPService_NP
+FDAT_ACT = FService_NP
+BAS(#PTP_PARAMS, 50.0)
+SET_CD_PARAMS (0)
+PTP XService_NP C_Dis
+;ENDFOLD
+  
+  CONTINUE
+END ;ENDE UP_Service_Program
+
+GLOBAL DEF Rueckzug_Service()
+  WHILE PosNr<> 10
+    SWITCH PosNr
+    CASE 41
+      TRIGGER WHEN DISTANCE= 1 DELAY= 0 DO PosNr= 10
+      ;MoveParamSet(FDAT, Acc in %, Vel in %, C_PTP in %, C_DIS in mm)
+      MoveParamSet(FService_VP,RueckZugAcc,RueckZugVel)
+      PTP XService_VP
+    CASE 45
+      ;Rueckfahrt
+      PosNr= 41
+    CASE 49
+      TRIGGER WHEN DISTANCE= 1 DELAY= 0 DO PosNr= 10
+      ;MoveParamSet(FDAT, Acc in %, Vel in %, C_PTP in %, C_DIS in mm)
+      MoveParamSet(FService_NP,RueckZugAcc,RueckZugVel)
+      PTP XService_NP
+    DEFAULT
+      LOOP
+        ;Falsche PosNr!
+        HALT
+      ENDLOOP
+    ENDSWITCH
+  ENDWHILE
+  CONTINUE
+END ;ENDE Service

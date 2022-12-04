@@ -1,0 +1,25 @@
+&ACCESS RVO
+&REL 7
+&PARAM DISKPATH = KRC:\R1\Program\Unterprogramme
+DEFDAT  UP_SERVICE
+;=================================================
+;Unterprogramm Service
+;Job 6
+;Zelle 6904_ZF_Bin-Picking
+;=================================================
+
+INT job
+
+DECL E6POS XService_VP={X -2045.92603,Y -6.20413113,Z 2966.34863,A 179.981964,B 0.0131895663,C -179.960907,S 18,T 10,E1 -3000.00098,E2 0.0,E3 0.0,E4 0.0,E5 0.0,E6 0.0}
+DECL FDAT FService_VP={TOOL_NO 15,BASE_NO 15,IPO_FRAME #BASE,POINT2[] " "}
+DECL PDAT PPService_VP={VEL 50.0000,ACC 100.000,APO_DIST 50.0000,APO_MODE #CDIS,GEAR_JERK 50.0000,EXAX_IGN 0}
+DECL E6POS XService_PP={X -1886.29614,Y -1152.45886,Z 936.626343,A 144.080551,B 0.890194833,C -89.3082886,S 18,T 34,E1 -3000.00098,E2 0.0,E3 0.0,E4 0.0,E5 0.0,E6 0.0}
+DECL FDAT FService_PP={TOOL_NO 15,BASE_NO 15,IPO_FRAME #BASE,POINT2[] " ",TQ_STATE FALSE}
+DECL PDAT PPService_PP={VEL 100.000,ACC 100.000,APO_DIST 0.0,GEAR_JERK 50.0000,EXAX_IGN 0}
+DECL E6POS XService_NP={X -2045.92603,Y -6.20413113,Z 2966.34863,A 179.981964,B 0.0131895663,C -179.960907,S 18,T 10,E1 -3000.00098,E2 0.0,E3 0.0,E4 0.0,E5 0.0,E6 0.0}
+DECL FDAT FService_NP={TOOL_NO 15,BASE_NO 15,IPO_FRAME #BASE,POINT2[] " "}
+DECL PDAT PPService_NP={VEL 50.0000,ACC 100.000,APO_DIST 50.0000,APO_MODE #CDIS,GEAR_JERK 50.0000,EXAX_IGN 0}
+
+DECL BASIS_SUGG_T LAST_BASIS={POINT1[] "P0                      ",POINT2[] "P0                      ",CP_PARAMS[] "CPDAT0                  ",PTP_PARAMS[] "PDAT0                   ",CONT[] "                        ",CP_VEL[] "2.0                     ",PTP_VEL[] "100                     ",SYNC_PARAMS[] "SYNCDAT                 ",SPL_NAME[] "S0                      ",A_PARAMS[] "ADAT0                   ",PC_SYNCSTRING[] "                        ",GL_SYNCSTRING[] "                        "}
+DECL MODULEPARAM_T LAST_TP_PARAMS={PARAMS[] "Kuka.PointName=Service_NP; Kuka.FrameData.base_no=15; Kuka.FrameData.tool_no=15; Kuka.FrameData.ipo_frame=#BASE; Kuka.FrameData.point2=; Kuka.isglobalpoint=False; Kuka.MoveDataPtpName=PService_NP; Kuka.MovementDataPdat.apo_mode=#CDIS; Kuka.MovementDataPdat.apo_dist=50; Kuka.MovementData.vel=50; Kuka.MovementData.acc=100; Kuka.MovementData.exax_ign=0; Kuka.VelocityPtp=50; Kuka.BlendingEnabled=True; Kuka.CurrentCDSetIndex=0    "}
+ENDDAT ;ENDE Service
