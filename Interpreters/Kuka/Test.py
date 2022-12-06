@@ -6,9 +6,11 @@ import KRL
 #------------------------------------
 bShowComments=False
 path=r"E:\Desktop\Daniel\Programming\GitRepository\Scara-Master\scara-mc-master\Interpreters\Kuka\UP_Service.src"
+robProgPath=r"E:\Desktop\Daniel\Programming\GitRepository\Scara-Master\scara-mc-master\Interpreters\Kuka\tempProg.txt"
+
 dicOperators={
     #dictionary is weighted, so specialised command words should be at the top of the keylist (eg "default" above "def")
-    "TRIGGER WHEN DISTANCE":"triggerWhenDistance", #trigger distance to point
+    "TRIGGER WHEN":"triggerWhen", #trigger distance to point
     "$BWDSTART":"setBwdstart",
     "PDAT_ACT":"setPdatAct",
     "FDAT_ACT":"setFdatAct",
@@ -34,7 +36,8 @@ keyOperators=dicOperators.keys()
 # Define Functions
 #------------------------------------
 
-def ID_KRL(code):
+#Ids KRL function from library
+def ID_KRL(code,file):
     #print("Code: " + code)
     #split codeblock into operators,parameters and variables
     for key in keyOperators:
@@ -47,11 +50,15 @@ def ID_KRL(code):
 
             #call function from KRL library
             krlFunc = getattr(KRL, dicOperators[key])
-            krlFunc()
+            krlFunc(params)
+
+            #write in temp file
+            file.write("# "+key+"("+params+")\n")
+
             break
     else: #if for loop was not exited with break function
-        print("Unknown command: " + code)
-        
+        print("Unknown command: " + code)   
+
 #------------------------------------
 # Main Code
 #------------------------------------
@@ -59,6 +66,12 @@ def ID_KRL(code):
 path=path.replace("\\","/")
 print("Opening File:" + path)
 file = open(path)
+
+robProgPath=robProgPath.replace("\\","/")
+print("Robot Programm:" + robProgPath)
+#open file overwriting content
+robprog=open(robProgPath,"w")
+robprog.write("#Temp PY Robot Programm\n")
 
 #go trough file line by line
 for numLine, line in enumerate(file):
@@ -75,7 +88,7 @@ for numLine, line in enumerate(file):
             #print line number
             print("Line: " + str(numLine))
             #Analze Code
-            ID_KRL(line[0].strip())
+            ID_KRL(line[0].strip(),robprog)
 
         #display comment (optional)
         if len(line)!=1 and bShowComments:      
@@ -83,3 +96,5 @@ for numLine, line in enumerate(file):
 
 #close file
 file.close()
+
+robprog.close()
